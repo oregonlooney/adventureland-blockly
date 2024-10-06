@@ -43,6 +43,13 @@
 		{% endif %}
 		<script src="/js/common_functions.js?v={{domain.v}}"></script>
 		<script src="/js/functions.js?v={{domain.v}}"></script>
+		
+		<script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+		<script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+		<script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
+		<script src="/js/blockly/msg/en.js"></script>
+		<script src="/js/custom_blocks.js"></script>
+
 		<script src="/js/game.js?v={{domain.v}}"></script>
 		<script src="/js/html.js?v={{domain.v}}"></script>
 		<script src="/js/payments.js?v={{domain.v}}"></script>
@@ -78,6 +85,19 @@
 				}
 			</style>
 		{% endif %}
+		
+		<style>
+			#blocklyDiv {
+				height: 400px;
+				width: 600px;
+			}
+			#generatedCode {
+				height: 100px;
+				width: 600px;
+			}
+		</style>
+
+	
 	</head>
 	<body>
 		{% if domain.no_html %}
@@ -161,6 +181,135 @@
 				<div id="topleftcornerui" style='display: inline-block; vertical-align: top' class="bpclicks"></div>
 				<div id="topleftcornerdialog" style='display: inline-block; margin-left: 5px; vertical-align: top'></div>
 			</div>
+			<div id="blockui" class="blockui">
+				<!-- Blockly Workspace -->
+				<div id="blocklyDiv" style="height: 480px; width: 100%;">BLOCK CODING AREA</div>
+				<br>
+				<!-- Toolbox Configuration -->
+				<xml id="toolbox" style="display: none">
+					<category name="Movement" colour="#FF8C00">
+						<block type="moveto"></block>
+						<block type="moveUp"></block>
+						<block type="moveDown"></block>
+						<block type="moveLeft"></block>
+						<block type="moveRight"></block>
+					</category>
+					<category name="Actions" colour="#1E90FF">
+						<block type="attack"></block>
+						<block type="useSkill"></block>
+						<block type="stopAction"></block>
+						<block type="useHpOrMp"></block>
+						<block type="loot"></block>
+						<block type="castSpell"></block>
+						<block type="dodgeAttack"></block>
+						<block type="healCharacter"></block>
+						<block type="getPlayerX"></block>
+						<block type="getPlayerY"></block>
+						<block type="getMonsterX"></block>
+						<block type="getMonsterY"></block>
+					</category>
+					<category name="Utilities" colour="#32CD32">
+						<block type="logMessage"></block>
+						<block type="setMessage"></block>
+						<block type="wait"></block>
+					</category>
+					<category name="Inputs" colour="#9400D3">
+						<block type="getNearestMonster"></block>
+						<block type="getNearestPlayer"></block>
+						<block type="getCharacterHP"></block>
+						<block type="getCharacterMP"></block>
+						<block type="getCharacterLevel"></block>
+						<block type="getTargetedMonster"></block>
+						<block type="getNearestMonsterWithOptions"></block>
+						<block type="changeTarget"></block>
+						<block type="isInRange"></block>
+						<block type="isMoving"></block>
+						<block type="checkBuffStatus"></block>
+						<block type="isMonsterNear"></block>
+					</category>
+					<category name="Variables" custom="VARIABLE" colour="#A55AA5"></category>
+					<category name="Logic" colour="#5C68A6">
+						<block type="controls_if"></block>
+						<block type="logic_compare"></block>
+						<block type="logic_operation"></block>
+						<block type="logic_negate"></block>
+						<block type="logic_boolean"></block>
+						<block type="logic_null"></block>
+					</category>
+					<category name="Loops" colour="#5CA65C">
+						<block type="controls_repeat_ext">
+							<value name="TIMES">
+								<shadow type="math_number">
+									<field name="NUM">10</field>
+								</shadow>
+							</value>
+						</block>
+						<block type="controls_whileUntil"></block>
+						<block type="controls_for">
+							<field name="VAR">i</field>
+							<min="0" max="10"></block>
+						</block>
+						<block type="controls_forEach"></block>
+						<block type="controls_flow_statements"></block>
+					</category>
+					<category name="Math" colour="#5CA65C">
+						<block type="math_number">
+							<field name="NUM">0</field>
+						</block>
+						<block type="math_arithmetic"></block>
+						<block type="math_single"></block>
+						<block type="math_trig"></block>
+						<block type="math_constant"></block>
+						<block type="math_number_property"></block>
+						<block type="math_round"></block>
+						<block type="math_on_list"></block>
+						<block type="math_modulo"></block>
+						<block type="math_constrain"></block>
+						<block type="math_random_int"></block>
+						<block type="math_random_float"></block>
+					</category>
+					<category name="Text" colour="#5CAABB">
+						<block type="text"></block>
+						<block type="text_join"></block>
+						<block type="text_append">
+							<field name="VAR">myText</field>
+						</block>
+						<block type="text_length"></block>
+						<block type="text_isEmpty"></block>
+						<block type="text_indexOf">
+							<field name="END">FIRST</field>
+						</block>
+						<block type="text_charAt">
+							<field name="WHERE">FROM_START</field>
+						</block>
+						<block type="text_getSubstring">
+							<field name="WHERE1">FROM_START</field>
+							<field name="WHERE2">FROM_START</field>
+						</block>
+						<block type="text_changeCase"></block>
+						<block type="text_trim"></block>
+						<block type="text_print"></block>
+						<block type="text_prompt_ext">
+							<field name="TYPE">TEXT</field>
+						</block>
+					</category>
+					<category name="Functions" custom="PROCEDURE" colour="#9A5CAA"></category>
+				</xml>
+				<div>GENERATED BLOCKLY CODE OUTPUT AREA</div>
+				<!-- Generated Code Display -->
+				<textarea id="generatedBlockCode" style="height: 85px; width: 600px;"></textarea>
+				<br>
+				<!-- Execute Button -->
+				<button onclick="runBlocklyCode()">EXECUTE BLOCKLY CODE</button>
+				<button onclick="saveBlocks()">Save Blocks</button>
+				<input type="file" id="fileInput" accept=".xml" style="display:none" onchange="loadBlocks(event)">
+				<button onclick="document.getElementById('fileInput').click()">Load Blocks</button>
+			
+				<!-- Close Button -->
+				<div style='text-align: center; position: absolute; right: -5px; top: -5px; width: 40px; border: 4px solid gray; z-index: 200; background: black; vertical-align: middle; font-size: 24px; line-height: 24px; height: 40px; padding: 10px;' onclick="toggle_block()" class='mclosebutton'>
+					X
+				</div>
+			</div>
 			<div id="codeui" class="codeui">
 				<textarea id="code"></textarea>
 				{#<div class="gamebutton cslotbutton">Wizard.js</div>
@@ -193,6 +342,7 @@
 					<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); visualize();">V</div>
 				{% endif %}
 				<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('snippet'); show_snippet()">X</div>
+				<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('code'); toggle_block()">BLOCKLY</div>
 				<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('code'); toggle_code()">CODE</div>
 				<div class="gamebutton" onclick="btc(event); tut('com'); render_com()">COM<span class='comcount' style='color: #9083BC'>{% if user_data and user_data.info.mail%} [{{user_data.info.mail}}]{% endif%}</spam></div>
 				<div class="gamebutton newcomermode {% if not domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); toggle_character()">CHAR</div>
