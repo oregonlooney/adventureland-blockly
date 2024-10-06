@@ -1,6 +1,16 @@
-# Adventure Land - The Open Source CODE MMORPG
+# Adventure Land - with Blockly Support
 
-https://adventure.land
+Fork of Adventure.Land with Blockly Support
+![Adventure Land Screenshot](https://i.postimg.cc/W3dZCDm3/blockly-adventureland-test1.png)
+
+This fork is a work in progress and may not align with the main project. 
+
+It is for educational purposes only. 
+
+
+
+<br><br>
+
 
 The Source Code is now available to anyone, even for commercial use! (License applies)
 
