@@ -175,7 +175,7 @@ var events = {
 	pinkgoo: 0, // every N minutes - 60
 	snowman: 20 * 60, // 1200 normally - 60 - at sprocess_game_data
 	egghunt: 0, // every N minutes - 60
-	halloween: false,
+	halloween: true,
 	// RANDOM
 	goblin: false,
 	goldenbat: 160000,
@@ -2034,7 +2034,7 @@ function drop_something(player, monster, share) {
 		// 3) item drops if the calculated falls below the drop rate threshold
 
 		let dropRate = item[0];
-		let rollModifier = share / player.luckm / monster.level / monster_mult;
+		let rollModifier = share * player.luckm * monster.level * monster_mult;
 		let playerRoll = Math.random() / rollModifier;
 
 		return playerRoll < dropRate;
