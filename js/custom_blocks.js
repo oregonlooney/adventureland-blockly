@@ -100,7 +100,7 @@ function runBlocklyCode() {
     const code = document.getElementById("generatedBlockCode").value;
     
     if (code_run) {
-        // Stop the existing runner before starting a new one
+        // Stop the existing Blockly runner before starting a new one
         stop_runner("blockly_runner");
     }
     
@@ -111,6 +111,17 @@ function runBlocklyCode() {
             ${code}
         })();
     `);
+    
+    // Optionally, Set the code_run Flag if Applicable
+    code_run = true; // Ensure this flag is defined and managed appropriately
+}
+
+// New Function to Stop Blockly Code
+function stopBlocklyCode() {
+    stop_runner("blockly_runner");
+    
+    // Optionally, Reset the code_run Flag if Applicable
+    code_run = false; // Ensure this flag is defined and managed appropriately
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -248,23 +259,74 @@ const isMonsterNear = {
     }
 };
 
+// Use Skill Block with Dynamic Dropdown
 const useSkill = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Use Skill'), 'LABEL');
-        this.appendValueInput('SKILL_NAME')
-            .setCheck('String')
-            .appendField('Skill Name');
+        this.appendDummyInput()
+            .appendField('Use Skill')
+            .appendField(new Blockly.FieldDropdown(getSkillOptions), 'SKILL_NAME');
         this.appendValueInput('TARGET')
-            .setCheck('String')
-            .appendField('Target');
+            .setCheck('Entity')
+            .appendField('on Target');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setTooltip('Use a skill with specified parameters');
-        this.setHelpUrl('');
+        this.setTooltip('Use a skill on the specified target');
         this.setColour(230);
     }
 };
+
+// Function to Populate Skill Options
+function getSkillOptions() {
+    var options = [];
+    for (var skill in parent.G.skills) {
+        options.push([skill, skill]);
+    }
+    return options;
+}
+
+// Get Nearest Monster of Type Block
+const getNearestMonsterOfType = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Get Nearest Monster of Type')
+            .appendField(new Blockly.FieldDropdown(getMonsterOptions), 'MONSTER_TYPE');
+        this.setOutput(true, 'Entity');
+        this.setTooltip('Returns the nearest monster of the specified type');
+        this.setColour(330);
+    }
+};
+
+// Function to Populate Monster Options
+function getMonsterOptions() {
+    var options = [];
+    for (var monster in parent.G.monsters) {
+        options.push([monster, monster]);
+    }
+    return options;
+}
+
+// Move to Location Block
+const moveToLocation = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Move to Location')
+            .appendField(new Blockly.FieldDropdown(getLocationOptions), 'LOCATION');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Moves character to the specified location');
+        this.setColour(225);
+    }
+};
+
+// Function to Populate Location Options
+function getLocationOptions() {
+    var options = [];
+    for (var mapName in parent.G.maps) {
+        options.push([mapName, mapName]);
+    }
+    return options;
+}
+
 
 const stopAction = {
     init: function() {
@@ -673,7 +735,9 @@ Blockly.common.defineBlocks({
     getPlayerY: getPlayerY,
     getMonsterX: getMonsterX,
     getMonsterY: getMonsterY,
-    isMonsterNear: isMonsterNear
+    isMonsterNear: isMonsterNear,
+    getNearestMonsterOfType: getNearestMonsterOfType,
+    moveToLocation: moveToLocation
 });
 
 // Define JavaScript generators for custom blocks
@@ -709,6 +773,19 @@ javascript.javascriptGenerator.forBlock['isMonsterNear'] = function(block) {
 };
 
 
+javascript.javascriptGenerator.forBlock['getNearestMonsterOfType'] = function(block) {
+    const monsterType = block.getFieldValue('MONSTER_TYPE');
+    const code = `get_nearest_monster({type: '${monsterType}'})`;
+    return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
+};
+
+javascript.javascriptGenerator.forBlock['moveToLocation'] = function(block) {
+    const location = block.getFieldValue('LOCATION');
+    const code = `await smart_move('${location}');\n`;
+    return code;
+};
+
+
 javascript.javascriptGenerator.forBlock['moveto'] = function(block) {
     const x = block.getFieldValue('X_COORD');
     const y = block.getFieldValue('Y_COORD');
@@ -731,9 +808,9 @@ javascript.javascriptGenerator.forBlock['attack'] = function(block) {
 };
 
 javascript.javascriptGenerator.forBlock['useSkill'] = function(block) {
-    const skillName = Blockly.JavaScript.valueToCode(block, 'SKILL_NAME', Blockly.JavaScript.ORDER_NONE) || `'skill'`;
-    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || `null`;
-    const code = `await use_skill(${skillName}, ${target});\n`;
+    const skillName = block.getFieldValue('SKILL_NAME');
+    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `await use_skill('${skillName}', ${target});\n`;
     return code;
 };
 
