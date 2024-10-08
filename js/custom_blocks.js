@@ -328,6 +328,9 @@ function getLocationOptions() {
 }
 
 
+
+
+
 const stopAction = {
     init: function() {
         this.appendDummyInput('INPUT_NAME')
@@ -558,14 +561,12 @@ const declareVariable = {
 // 1. Cast Spell Block
 const castSpell = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Cast Spell'), 'LABEL');
-        this.appendValueInput('SPELL_NAME')
-            .setCheck('String')
-            .appendField('Spell Name');
+        this.appendDummyInput()
+            .appendField('Cast Spell')
+            .appendField(new Blockly.FieldDropdown(getSpellOptions), 'SPELL_NAME');
         this.appendValueInput('TARGET')
-            .setCheck('String')
-            .appendField('Target');
+            .setCheck('Entity')
+            .appendField('on Target');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setTooltip('Cast a spell at the specified target');
@@ -638,13 +639,12 @@ const healCharacter = {
 };
 
 // 6. Move Up Block
+// Modified Move Blocks with Number Input Fields
 const moveUp = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Move Up'), 'LABEL');
-        this.appendValueInput('STEPS')
-            .setCheck('Number')
-            .appendField('Steps');
+        this.appendDummyInput()
+            .appendField('Move Up')
+            .appendField(new Blockly.FieldNumber(10), 'STEPS');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setTooltip('Move the character up by a specified number of steps');
@@ -653,14 +653,11 @@ const moveUp = {
     }
 };
 
-// 7. Move Down Block
 const moveDown = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Move Down'), 'LABEL');
-        this.appendValueInput('STEPS')
-            .setCheck('Number')
-            .appendField('Steps');
+        this.appendDummyInput()
+            .appendField('Move Down')
+            .appendField(new Blockly.FieldNumber(10), 'STEPS');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setTooltip('Move the character down by a specified number of steps');
@@ -669,14 +666,11 @@ const moveDown = {
     }
 };
 
-// 8. Move Left Block
 const moveLeft = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Move Left'), 'LABEL');
-        this.appendValueInput('STEPS')
-            .setCheck('Number')
-            .appendField('Steps');
+        this.appendDummyInput()
+            .appendField('Move Left')
+            .appendField(new Blockly.FieldNumber(10), 'STEPS');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setTooltip('Move the character left by a specified number of steps');
@@ -685,14 +679,11 @@ const moveLeft = {
     }
 };
 
-// 9. Move Right Block
 const moveRight = {
     init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Move Right'), 'LABEL');
-        this.appendValueInput('STEPS')
-            .setCheck('Number')
-            .appendField('Steps');
+        this.appendDummyInput()
+            .appendField('Move Right')
+            .appendField(new Blockly.FieldNumber(10), 'STEPS');
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setTooltip('Move the character right by a specified number of steps');
@@ -700,6 +691,108 @@ const moveRight = {
         this.setColour(180);
     }
 };
+
+// Define the new 'Move to Target' block
+const moveToEntity = {
+    init: function() {
+        this.appendValueInput('TARGET')
+            .setCheck('Entity')
+            .appendField('Move to Target');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Move to the specified target');
+        this.setColour(225);
+    }
+};
+
+const canAttack = {
+    init: function() {
+        this.appendValueInput('TARGET')
+            .setCheck('Entity')
+            .appendField('Can Attack');
+        this.setOutput(true, 'Boolean');
+        this.setTooltip('Checks if you can attack the specified target');
+        this.setColour(210);
+    }
+};
+
+// Define the 'Is Character Dead' block
+const isCharacterDead = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Is Character Dead');
+        this.setOutput(true, 'Boolean');
+        this.setTooltip('Checks if your character is dead');
+        this.setColour(210);
+    }
+};
+
+
+// Added Follow Player Block
+const followPlayer = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Follow Player')
+            .appendField(new Blockly.FieldTextInput('player_name'), 'PLAYER_NAME');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Follow another player by name');
+        this.setHelpUrl('');
+        this.setColour(225);
+    }
+};
+
+// Added Player Name Input Block
+const playerName = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Player Name')
+            .appendField(new Blockly.FieldTextInput('player_name'), 'PLAYER_NAME');
+        this.setOutput(true, 'String');
+        this.setTooltip('Specify a player name');
+        this.setColour(300);
+    }
+};
+
+// New Block: Get Monster XP
+const getMonsterXP = {
+    init: function() {
+        this.appendValueInput('MONSTER')
+            .setCheck('Entity')
+            .appendField('Get Monster XP');
+        this.setOutput(true, 'Number');
+        this.setTooltip('Returns the XP value of the specified monster');
+        this.setColour(330);
+    }
+};
+
+// New Block: Get Monster Gold
+const getMonsterGold = {
+    init: function() {
+        this.appendValueInput('MONSTER')
+            .setCheck('Entity')
+            .appendField('Get Monster Gold');
+        this.setOutput(true, 'Number');
+        this.setTooltip('Returns the gold value of the specified monster');
+        this.setColour(330);
+    }
+};
+const isMonsterXpGoldBelow = {
+    init: function() {
+        this.appendValueInput('MONSTER')
+            .setCheck('Entity')
+            .appendField('Is Monster');
+        this.appendDummyInput()
+            .appendField(new Blockly.FieldDropdown([['XP', 'xp'], ['Gold', 'gold']]), 'ATTRIBUTE')
+            .appendField('below');
+        this.appendValueInput('THRESHOLD')
+            .setCheck('Number');
+        this.setOutput(true, 'Boolean');
+        this.setTooltip('Checks if the monster\'s XP or gold is below a threshold');
+        this.setColour(210);
+    }
+};
+
 
 Blockly.common.defineBlocks({
     moveto: moveto,
@@ -737,10 +830,99 @@ Blockly.common.defineBlocks({
     getMonsterY: getMonsterY,
     isMonsterNear: isMonsterNear,
     getNearestMonsterOfType: getNearestMonsterOfType,
-    moveToLocation: moveToLocation
+    moveToLocation: moveToLocation,
+    moveToEntity: moveToEntity, // New Block
+    canAttack: canAttack,       // New Block
+    isCharacterDead: isCharacterDead, // New Block
+    followPlayer: followPlayer,   // New Block
+    playerName: playerName,       // New Block
+    getMonsterXP: getMonsterXP,
+    getMonsterGold: getMonsterGold,
+    isMonsterXpGoldBelow: isMonsterXpGoldBelow,
+
+
+
 });
 
 // Define JavaScript generators for custom blocks
+// Define the JavaScript generator for 'Move to Target' block
+javascript.javascriptGenerator.forBlock['moveToEntity'] = function(block) {
+    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'get_targeted_monster()';
+    const code = `
+        if (${target} && !is_in_range(${target})) {
+            await move(
+                character.x + (${target}.x - character.x)/2,
+                character.y + (${target}.y - character.y)/2
+            );
+        } else {
+            set_message("No Target to Move To");
+            await sleep(500);
+        }\n`;
+    return code;
+};
+
+// Generator for Player Name Input Block
+javascript.javascriptGenerator.forBlock['playerName'] = function(block) {
+    const playerName = block.getFieldValue('PLAYER_NAME');
+    const code = `'${playerName}'`;
+    return [code, Blockly.JavaScript.ORDER_ATOMIC];
+};
+
+// Generator for Get Monster XP
+javascript.javascriptGenerator.forBlock['getMonsterXP'] = function(block) {
+    const monster = Blockly.JavaScript.valueToCode(block, 'MONSTER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `(${monster} && ${monster}.xp)`;
+    return [code, Blockly.JavaScript.ORDER_CONDITIONAL];
+};
+
+// Generator for Get Monster Gold
+javascript.javascriptGenerator.forBlock['getMonsterGold'] = function(block) {
+    const monster = Blockly.JavaScript.valueToCode(block, 'MONSTER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `(${monster} && parent.G.monsters[${monster}.mtype].gold)`;
+    return [code, Blockly.JavaScript.ORDER_CONDITIONAL];
+};
+
+// Generator for Is Monster XP/Gold Below Threshold
+javascript.javascriptGenerator.forBlock['isMonsterXpGoldBelow'] = function(block) {
+    const monster = Blockly.JavaScript.valueToCode(block, 'MONSTER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const attribute = block.getFieldValue('ATTRIBUTE');
+    const threshold = Blockly.JavaScript.valueToCode(block, 'THRESHOLD', Blockly.JavaScript.ORDER_NONE) || '0';
+    let code;
+    if (attribute === 'xp') {
+        code = `(${monster} && ${monster}.xp < ${threshold})`;
+    } else {
+        code = `(${monster} && parent.G.monsters[${monster}.mtype].gold < ${threshold})`;
+    }
+    return [code, Blockly.JavaScript.ORDER_RELATIONAL];
+};
+
+
+javascript.javascriptGenerator.forBlock['followPlayer'] = function(block) {
+    const playerName = block.getFieldValue('PLAYER_NAME');
+    const code = `
+        let player = get_player('${playerName}');
+        if (player) {
+            await smart_move(player);
+        } else {
+            set_message('Player not found');
+        }\n`;
+    return code;
+};
+
+
+// Define the JavaScript generator for 'Is Character Dead' block
+javascript.javascriptGenerator.forBlock['isCharacterDead'] = function(block) {
+    const code = `character.rip`;
+    return [code, Blockly.JavaScript.ORDER_ATOMIC];
+};
+
+
+// Define the JavaScript generator for 'Can Attack' block
+javascript.javascriptGenerator.forBlock['canAttack'] = function(block) {
+    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `can_attack(${target})`;
+    return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
+};
 
 
 
@@ -956,9 +1138,9 @@ javascript.javascriptGenerator.forBlock['declareVariable'] = function(block) {
 
 // Cast Spell Block Generator
 javascript.javascriptGenerator.forBlock['castSpell'] = function(block) {
-    const spellName = Blockly.JavaScript.valueToCode(block, 'SPELL_NAME', Blockly.JavaScript.ORDER_NONE) || `'fireball'`;
+    const spellName = block.getFieldValue('SPELL_NAME');
     const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || `null`;
-    const code = `await use_skill(${spellName}, ${target});\n`;
+    const code = `await use_skill('${spellName}', ${target});\n`;
     return code;
 };
 
@@ -986,29 +1168,39 @@ javascript.javascriptGenerator.forBlock['healCharacter'] = function(block) {
     return code;
 };
 
-
 javascript.javascriptGenerator.forBlock['moveUp'] = function(block) {
-    const steps = Blockly.JavaScript.valueToCode(block, 'STEPS', Blockly.JavaScript.ORDER_NONE) || `10`;
+    const steps = block.getFieldValue('STEPS') || 10;
     const code = `await move(character.real_x, character.real_y - ${steps});\n`;
     return code;
 };
 
 javascript.javascriptGenerator.forBlock['moveDown'] = function(block) {
-    const steps = Blockly.JavaScript.valueToCode(block, 'STEPS', Blockly.JavaScript.ORDER_NONE) || `10`;
+    const steps = block.getFieldValue('STEPS') || 10;
     const code = `await move(character.real_x, character.real_y + ${steps});\n`;
     return code;
 };
 
 javascript.javascriptGenerator.forBlock['moveLeft'] = function(block) {
-    const steps = Blockly.JavaScript.valueToCode(block, 'STEPS', Blockly.JavaScript.ORDER_NONE) || `10`;
+    const steps = block.getFieldValue('STEPS') || 10;
     const code = `await move(character.real_x - ${steps}, character.real_y);\n`;
     return code;
 };
 
 javascript.javascriptGenerator.forBlock['moveRight'] = function(block) {
-    const steps = Blockly.JavaScript.valueToCode(block, 'STEPS', Blockly.JavaScript.ORDER_NONE) || `10`;
-    const code = `awaitmove(character.real_x + ${steps}, character.real_y);\n`;
+    const steps = block.getFieldValue('STEPS') || 10;
+    const code = `await move(character.real_x + ${steps}, character.real_y);\n`;
     return code;
 };
+
+
+function getSpellOptions() {
+    var options = [];
+    for (var skill in parent.G.skills) {
+        options.push([skill, skill]);
+    }
+    return options;
+}
+
+
 
 console.log("New custom blocks and generators have been added.");
