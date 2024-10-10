@@ -1,5 +1,21 @@
 let workspace; // Declare a global variable to hold the workspace
+const defaultBlocksXML = `
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="setIntervalBlock" id="|AwK}|akRxenTLjKI6Vh" x="290" y="310">
+    <field name="INTERVAL">1000</field>
+  </block>
+    <block type="commentBlock" id="comment1" x="100" y="100">
+    <field name="COMMENT_TEXT">Welcome to Adventure Land Blockly Edition</field>
+  </block>
 
+  <block type="commentBlock" id="comment1" x="100" y="130">
+    <field name="COMMENT_TEXT">Use the blocks to automate your character</field>
+  </block>
+   <block type="commentBlock" id="comment1" x="100" y="160">
+    <field name="COMMENT_TEXT">Put code in the loop block to run it every 1 sec</field>
+  </block>
+</xml>
+`;
 
 // Function to toggle the Block UI Window
 function toggle_block() {
@@ -58,6 +74,7 @@ function initBlockly() {
         contextMenu: true
 
     });
+    
 
     // Update generated code
     workspace.addChangeListener(function(event) {
@@ -68,28 +85,80 @@ function initBlockly() {
 
     // Resize function
     function resizeBlockly() {
-        // Get the blockui element
         var blockui = document.getElementById('blockui');
+        var blocklyDiv = document.getElementById('blocklyDiv');
+        var codeOutput = document.getElementById('generatedBlockCode');
         
-        // Only resize if the blockui is visible
         if (blockui.style.display === 'block') {
-            // Get the blocklyDiv element
-            var blocklyDiv = document.getElementById('blocklyDiv');
+            var totalHeight = blockui.offsetHeight - 200; // Adjust for other elements
+            var blocklyHeight = totalHeight - codeOutput.offsetHeight;
             
-            // Set the size of the Blockly div to match the blockui
             blocklyDiv.style.width = (blockui.offsetWidth - 20) + 'px';
-            blocklyDiv.style.height = (blockui.offsetHeight - 200) + 'px';
+            blocklyDiv.style.height = blocklyHeight + 'px';
+            codeOutput.style.width = (blockui.offsetWidth - 20) + 'px';
             
-            // Resize the Blockly workspace
             Blockly.svgResize(workspace);
         }
     }
 
-    // Resize the workspace after a short delay
+    // Resize handlers
+    var blocklyResizeHandle = document.getElementById('blocklyResizeHandle');
+    var blocklyCodeResizeHandle = document.getElementById('blocklyCodeResizeHandle');
+    var blockui = document.getElementById('blockui');
+    var blocklyDiv = document.getElementById('blocklyDiv');
+    var codeOutput = document.getElementById('generatedBlockCode');
+
+    blocklyResizeHandle.addEventListener('mousedown', initHorizontalDrag);
+    blocklyCodeResizeHandle.addEventListener('mousedown', initVerticalDrag);
+
+    function initHorizontalDrag(e) {
+        e.preventDefault();
+        document.addEventListener('mousemove', doDragHorizontal);
+        document.addEventListener('mouseup', stopDragHorizontal);
+    }
+
+    function doDragHorizontal(e) {
+        blockui.style.width = (e.clientX - blockui.offsetLeft) + 'px';
+        resizeBlockly();
+    }
+
+    function stopDragHorizontal() {
+        document.removeEventListener('mousemove', doDragHorizontal);
+        document.removeEventListener('mouseup', stopDragHorizontal);
+    }
+
+    function initVerticalDrag(e) {
+        e.preventDefault();
+        document.addEventListener('mousemove', doDragVertical);
+        document.addEventListener('mouseup', stopDragVertical);
+    }
+
+    function doDragVertical(e) {
+        var newBlocklyHeight = e.clientY - blockui.offsetTop - blocklyDiv.offsetTop;
+        blocklyDiv.style.height = newBlocklyHeight + 'px';
+        codeOutput.style.height = (blockui.offsetHeight - newBlocklyHeight - 200) + 'px'; // Adjust for other elements
+        resizeBlockly();
+    }
+
+    function stopDragVertical() {
+        document.removeEventListener('mousemove', doDragVertical);
+        document.removeEventListener('mouseup', stopDragVertical);
+    }
+
+    // Initial resize
     setTimeout(resizeBlockly, 100);
 
-    // Add a resize handler for when the Block window is toggled
+    // Add a resize handler for when the Block window is toggled or resized
     window.addEventListener('resize', resizeBlockly);
+    blockui.addEventListener('mouseup', resizeBlockly); // For the horizontal resize
+    try {
+        const xml = Blockly.utils.xml.textToDom(defaultBlocksXML);
+        Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, workspace);
+    } catch (e) {
+        console.error('Error loading default blocks:', e);
+    }
+
+
 }
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -174,6 +243,8 @@ function loadBlocks(event) {
 }
 
 
+
+
 const moveto = {
     init: function() {
         this.appendDummyInput('INPUT_NAME')
@@ -189,6 +260,19 @@ const moveto = {
     }
 };
 
+
+const commentBlock = {
+    init: function() {
+        this.appendDummyInput('INPUT_NAME')
+            .appendField(new Blockly.FieldLabelSerializable('Comment'), 'LABEL')
+            .appendField(new Blockly.FieldTextInput('// Your comment here'), 'COMMENT_TEXT');
+        this.setPreviousStatement(false);
+        this.setNextStatement(false);
+        this.setTooltip('Insert a comment into the code');
+        this.setHelpUrl('');
+        this.setColour(60);
+    }
+};
 // Attack Block
 const attack = {
     init: function() {
@@ -387,12 +471,13 @@ const getNearestPlayer = {
     init: function() {
         this.appendDummyInput('INPUT_NAME')
             .appendField(new Blockly.FieldLabelSerializable('Get Nearest Player'), 'LABEL');
-        this.setOutput(true, 'String');
-        this.setTooltip('Returns the name of the nearest player');
+        this.setOutput(true, 'Entity'); // Changed from 'String' to 'Entity'
+        this.setTooltip('Returns the nearest player entity');
         this.setHelpUrl('');
         this.setColour(300);
     }
 };
+
 
 const getCharacterHP = {
     init: function() {
@@ -622,21 +707,6 @@ const checkBuffStatus = {
     }
 };
 
-// 5. Heal Character Block
-const healCharacter = {
-    init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Heal Character'), 'LABEL');
-        this.appendValueInput('HEAL_AMOUNT')
-            .setCheck('Number')
-            .appendField('Heal Amount');
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setTooltip('Heals the character by the specified amount');
-        this.setHelpUrl('');
-        this.setColour(100);
-    }
-};
 
 // 6. Move Up Block
 // Modified Move Blocks with Number Input Fields
@@ -792,6 +862,99 @@ const isMonsterXpGoldBelow = {
         this.setColour(210);
     }
 };
+const getPlayerHPFromEntity = {
+    init: function() {
+        this.appendValueInput('PLAYER_ENTITY')
+            .setCheck('Entity')
+            .appendField('Get Player HP from');
+        this.setOutput(true, 'Number');
+        this.setTooltip('Returns the HP of the specified player entity');
+        this.setColour(250);
+    }
+};
+
+// Get Player MP from Entity Block
+const getPlayerMPFromEntity = {
+    init: function() {
+        this.appendValueInput('PLAYER_ENTITY')
+            .setCheck('Entity')
+            .appendField('Get Player MP from');
+        this.setOutput(true, 'Number');
+        this.setTooltip('Returns the MP of the specified player entity');
+        this.setColour(250);
+    }
+};
+
+
+const isCharacterMoving = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Is Character Moving');
+        this.setOutput(true, 'Boolean');
+        this.setTooltip('Checks if the character is moving');
+        this.setColour(210);
+    }
+};
+
+const getPlayerByName = {
+    init: function() {
+        this.appendValueInput('PLAYER_NAME')
+            .setCheck('String')
+            .appendField('Get Player By Name');
+        this.setOutput(true, 'Entity');
+        this.setTooltip('Gets the player entity by name');
+        this.setColour(300);
+    }
+};
+const useSkillByName = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Use Skill by Name')
+            .appendField(new Blockly.FieldTextInput('skill_name'), 'SKILL_NAME');
+        this.appendValueInput('TARGET')
+            .setCheck(['Entity', 'Null'])
+            .appendField('on Target');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Use a skill on the specified target by name');
+        this.setColour(230);
+    }
+};
+const getMonsterHP = {
+    init: function() {
+        this.appendValueInput('MONSTER')
+            .setCheck('Entity')
+            .appendField('Get Monster HP of');
+        this.setOutput(true, 'Number');
+        this.setTooltip('Returns the current HP of the specified monster');
+        this.setColour(330);
+    }
+};
+
+const setIntervalBlock = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Every')
+            .appendField(new Blockly.FieldNumber(1000), 'INTERVAL')
+            .appendField('ms do');
+        this.appendStatementInput('DO')
+            .setCheck(null);
+        this.setColour(120);
+        this.setTooltip('Run the enclosed blocks every specified interval in milliseconds');
+        this.setHelpUrl('');
+    }
+};
+
+javascript.javascriptGenerator.forBlock['setIntervalBlock'] = function(block) {
+    const interval = block.getFieldValue('INTERVAL') || '1000';
+    const statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+    const code = `
+        setInterval(async function() {
+            ${statements_do}
+        }, ${interval});
+    `;
+    return code;
+};
 
 
 Blockly.common.defineBlocks({
@@ -819,7 +982,6 @@ Blockly.common.defineBlocks({
     dodgeAttack: dodgeAttack,
     useItem: useItem,
     checkBuffStatus: checkBuffStatus,
-    healCharacter: healCharacter,
     moveUp: moveUp,
     moveDown: moveDown,
     moveLeft: moveLeft,
@@ -839,6 +1001,14 @@ Blockly.common.defineBlocks({
     getMonsterXP: getMonsterXP,
     getMonsterGold: getMonsterGold,
     isMonsterXpGoldBelow: isMonsterXpGoldBelow,
+    getPlayerHPFromEntity: getPlayerHPFromEntity,
+    getPlayerMPFromEntity: getPlayerMPFromEntity,
+    isCharacterMoving: isCharacterMoving,
+    getPlayerByName: getPlayerByName,
+    useSkillByName: useSkillByName,
+    getMonsterHP: getMonsterHP,
+    setIntervalBlock: setIntervalBlock,
+    commentBlock: commentBlock, // Newly added Comment Block
 
 
 
@@ -859,6 +1029,33 @@ javascript.javascriptGenerator.forBlock['moveToEntity'] = function(block) {
             await sleep(500);
         }\n`;
     return code;
+};
+javascript.javascriptGenerator.forBlock['commentBlock'] = function(block) {
+    const commentText = block.getFieldValue('COMMENT_TEXT');
+    const code = `// ${commentText}\n`;
+    return code;
+};
+javascript.javascriptGenerator.forBlock['isCharacterMoving'] = function(block) {
+    const code = `is_moving(character)`;
+    return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
+};
+
+javascript.javascriptGenerator.forBlock['getPlayerByName'] = function(block) {
+    const playerName = Blockly.JavaScript.valueToCode(block, 'PLAYER_NAME', Blockly.JavaScript.ORDER_NONE) || '""';
+    const code = `get_player(${playerName})`;
+    return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
+};
+javascript.javascriptGenerator.forBlock['useSkillByName'] = function(block) {
+    const skillName = block.getFieldValue('SKILL_NAME');
+    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `await use_skill('${skillName}', ${target});\n`;
+    return code;
+};
+
+javascript.javascriptGenerator.forBlock['getMonsterHP'] = function(block) {
+    const monster = Blockly.JavaScript.valueToCode(block, 'MONSTER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `(${monster} && ${monster}.hp)`;
+    return [code, Blockly.JavaScript.ORDER_CONDITIONAL];
 };
 
 // Generator for Player Name Input Block
@@ -992,7 +1189,15 @@ javascript.javascriptGenerator.forBlock['attack'] = function(block) {
 javascript.javascriptGenerator.forBlock['useSkill'] = function(block) {
     const skillName = block.getFieldValue('SKILL_NAME');
     const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
-    const code = `await use_skill('${skillName}', ${target});\n`;
+    const skillCooldown = parent.G.skills[skillName].cooldown || 1000;
+    const code = `
+        if (can_use('${skillName}', ${target})) {
+            await use_skill('${skillName}', ${target});
+            await sleep(${skillCooldown});
+        } else {
+            await sleep(250);
+        }
+    `;
     return code;
 };
 
@@ -1018,6 +1223,18 @@ javascript.javascriptGenerator.forBlock['wait'] = function(block) {
     return code;
 };
 
+javascript.javascriptGenerator.forBlock['controls_whileUntil'] = function(block) {
+    const until = block.getFieldValue('MODE') === 'UNTIL';
+    const condition = Blockly.JavaScript.valueToCode(block, 'BOOL', until ? Blockly.JavaScript.ORDER_LOGICAL_NOT : Blockly.JavaScript.ORDER_NONE) || 'false';
+    const statements = Blockly.JavaScript.statementToCode(block, 'DO');
+    const code = `
+        while (${until ? '!' : ''}(${condition})) {
+            ${statements}
+            await sleep(250); // Include a delay to prevent rapid looping
+        }
+    `;
+    return code;
+};
 
 
 javascript.javascriptGenerator.forBlock['getNearestMonster'] = function(block) {
@@ -1026,12 +1243,9 @@ javascript.javascriptGenerator.forBlock['getNearestMonster'] = function(block) {
 };
 
 javascript.javascriptGenerator.forBlock['getNearestPlayer'] = function(block) {
-    const label = block.getFieldValue('LABEL');
-  
-    // Assemble JavaScript code
-    const code = `getNearestPlayer()`;
+    const code = `get_nearest_player()`; // Assuming you have a function like this
     return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
-}
+};
 
 javascript.javascriptGenerator.forBlock['getCharacterHP'] = function(block) {
     const label = block.getFieldValue('LABEL');
@@ -1163,10 +1377,6 @@ javascript.javascriptGenerator.forBlock['checkBuffStatus'] = function(block) {
 };
 
 
-javascript.javascriptGenerator.forBlock['healCharacter'] = function(block) {
-    const code = `use_hp_or_mp();\n`;
-    return code;
-};
 
 javascript.javascriptGenerator.forBlock['moveUp'] = function(block) {
     const steps = block.getFieldValue('STEPS') || 10;
@@ -1201,6 +1411,17 @@ function getSpellOptions() {
     return options;
 }
 
+// JavaScript Generator for Get Player HP from Entity
+javascript.javascriptGenerator.forBlock['getPlayerHPFromEntity'] = function(block) {
+    const playerEntity = Blockly.JavaScript.valueToCode(block, 'PLAYER_ENTITY', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `${playerEntity}.hp`;
+    return [code, Blockly.JavaScript.ORDER_MEMBER];
+};
 
-
+// JavaScript Generator for Get Player MP from Entity
+javascript.javascriptGenerator.forBlock['getPlayerMPFromEntity'] = function(block) {
+    const playerEntity = Blockly.JavaScript.valueToCode(block, 'PLAYER_ENTITY', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `${playerEntity}.mp`;
+    return [code, Blockly.JavaScript.ORDER_MEMBER];
+};
 console.log("New custom blocks and generators have been added.");

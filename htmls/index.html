@@ -183,6 +183,7 @@
 			</div>
 			<div id="blockui" class="blockui">
 				<!-- Blockly Workspace -->
+				<div id="blocklyResizeHandle" class="resize-handle-horizontal"></div>
 				<div id="blocklyDiv" style="height: 480px; width: 100%;">BLOCK CODING AREA</div>
 				<br>
 				<!-- Toolbox Configuration -->
@@ -204,13 +205,13 @@
 					<category name="Actions" colour="#1E90FF">
 						<block type="canAttack"></block> <!-- New Block -->
 						<block type="attack"></block>
+						<block type="useSkillByName"></block> <!-- New Block -->
 						<block type="useSkill"></block>
 						<block type="stopAction"></block>
 						<block type="useHpOrMp"></block>
 						<block type="loot"></block>
 						<block type="castSpell"></block>
 						<block type="dodgeAttack"></block>
-						<block type="healCharacter"></block>
 						<block type="getPlayerX"></block>
 						<block type="getPlayerY"></block>
 						<block type="getMonsterX"></block>
@@ -220,8 +221,17 @@
 						<block type="logMessage"></block>
 						<block type="setMessage"></block>
 						<block type="wait"></block>
+						<block type="commentBlock"></block>
+						
+
 					</category>
 					<category name="Inputs" colour="#9400D3">
+						<block type="getPlayerHPFromEntity"></block>
+						<block type="getPlayerMPFromEntity"></block>
+						<block type="getPlayerByName"></block> <!-- New Block -->
+						<block type="getMonsterHP"></block> <!-- New Block -->
+						<block type="isCharacterMoving"></block> <!-- New Block -->
+					
 						<block type="playerName"></block> <!-- New Block -->
 						<block type="getNearestMonster"></block>
 						<block type="getNearestMonsterOfType"></block> <!-- New Block -->
@@ -252,6 +262,7 @@
 						<block type="logic_null"></block>
 					</category>
 					<category name="Loops" colour="#5CA65C">
+						<block type="setIntervalBlock"></block>
 						<block type="controls_repeat_ext">
 							<value name="TIMES">
 								<shadow type="math_number">
@@ -312,6 +323,8 @@
 				</xml>
 				<div>GENERATED BLOCKLY CODE OUTPUT AREA</div>
 				<!-- Generated Code Display -->
+				<div id="blocklyCodeResizeHandle" class="resize-handle-vertical"></div>
+
 				<textarea id="generatedBlockCode" style="height: 85px; width: 600px;"></textarea>
 				<br>
 				<!-- Execute Button -->

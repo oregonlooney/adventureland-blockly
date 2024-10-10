@@ -844,6 +844,28 @@ li{
     z-index: 402;
     overflow: hidden;
     box-sizing: border-box;
+	resize: horizontal;
+    overflow: auto;
+    min-width: 300px;
+    max-width: 90vw;
+
+}
+
+.resize-handle-vertical {
+    width: 100%;
+    height: 5px;
+    background: #ccc;
+    cursor: ns-resize;
+}
+
+.resize-handle-horizontal {
+    width: 5px;
+    height: 100%;
+    background: #ccc;
+    cursor: ew-resize;
+    position: absolute;
+    right: 0;
+    top: 0;
 }
 
 #blocklyDiv {
