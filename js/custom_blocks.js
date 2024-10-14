@@ -832,7 +832,7 @@ const getMonsterGold = {
         this.setTooltip('Returns the gold value of the specified monster');
         this.setColour(330);
     }
-};
+}; 
 const isMonsterXpGoldBelow = {
     init: function() {
         this.appendValueInput('MONSTER')
