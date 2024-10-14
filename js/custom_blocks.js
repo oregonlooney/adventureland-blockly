@@ -287,7 +287,7 @@ const attack = {
 };
 
 // Get Player X Block
-const getPlayerX = {
+const getCharacterX = {
     init: function() {
         this.appendDummyInput()
             .appendField('Get Player X');
@@ -298,7 +298,7 @@ const getPlayerX = {
 };
 
 // Get Player Y Block
-const getPlayerY = {
+const getCharacterY = {
     init: function() {
         this.appendDummyInput()
             .appendField('Get Player Y');
@@ -543,7 +543,7 @@ const getTargetedMonster = {
     init: function() {
         this.appendDummyInput('INPUT_NAME')
             .appendField(new Blockly.FieldLabelSerializable('Get Targeted Monster'), 'LABEL');
-        this.setOutput(true, 'String');
+        this.setOutput(true, 'Entity'); // Changed from 'String' to 'Entity'
         this.setTooltip('Returns the currently targeted monster');
         this.setHelpUrl('');
         this.setColour(290);
@@ -569,20 +569,6 @@ const getNearestMonsterWithOptions = {
     }
 };
 
-const changeTarget = {
-    init: function() {
-        this.appendDummyInput('INPUT_NAME')
-            .appendField(new Blockly.FieldLabelSerializable('Change Target'), 'LABEL');
-        this.appendValueInput('TARGET')
-            .setCheck('String')
-            .appendField('Target');
-        this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
-        this.setTooltip('Changes the current target to the specified monster');
-        this.setHelpUrl('');
-        this.setColour(180);
-    }
-};
 
 const setMessage = {
     init: function() {
@@ -898,14 +884,15 @@ const isCharacterMoving = {
 
 const getPlayerByName = {
     init: function() {
-        this.appendValueInput('PLAYER_NAME')
-            .setCheck('String')
-            .appendField('Get Player By Name');
+        this.appendDummyInput()
+            .appendField('Get Player By Name')
+            .appendField(new Blockly.FieldTextInput('player_name'), 'PLAYER_NAME');
         this.setOutput(true, 'Entity');
         this.setTooltip('Gets the player entity by name');
         this.setColour(300);
     }
 };
+
 const useSkillByName = {
     init: function() {
         this.appendDummyInput()
@@ -957,6 +944,151 @@ javascript.javascriptGenerator.forBlock['setIntervalBlock'] = function(block) {
 };
 
 
+// Function to Populate Monster Attribute Options
+function getMonsterAttributeOptions() {
+    return [
+        ['HP', 'hp'],
+        ['Max HP', 'max_hp'],
+        ['Level', 'level'],
+        ['XP', 'xp'],
+        ['Attack', 'attack'],
+        ['Speed', 'speed'],
+        ['Range', 'range'],
+        ['Type', 'type'],
+        ['Target', 'target'],
+        ['X Position', 'x'],
+        ['Y Position', 'y'],
+        ['Moving', 'moving'],
+        ['Dead', 'dead'],
+        // Add other attributes as needed
+    ];
+}
+
+const getMonsterAttribute = {
+    init: function() {
+        this.appendValueInput('MONSTER')
+            .setCheck('Entity')
+            .appendField('Get Monster')
+            .appendField(new Blockly.FieldDropdown(getMonsterAttributeOptions), 'ATTRIBUTE')
+            .appendField('of');
+        this.setOutput(true, null); // Output type depends on attribute
+        this.setTooltip('Gets an attribute of the specified monster');
+        this.setColour(330);
+    }
+};
+
+javascript.javascriptGenerator.forBlock['getMonsterAttribute'] = function(block) {
+    const monster = Blockly.JavaScript.valueToCode(block, 'MONSTER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const attribute = block.getFieldValue('ATTRIBUTE');
+    const code = `(${monster} && ${monster}.${attribute})`;
+    return [code, Blockly.JavaScript.ORDER_MEMBER];
+};
+
+
+
+// Function to Populate Player Attribute Options
+function getPlayerAttributeOptions() {
+    return [
+        ['HP', 'hp'],
+        ['Max HP', 'max_hp'],
+        ['MP', 'mp'],
+        ['Max MP', 'max_mp'],
+        ['Level', 'level'],
+        ['X Position', 'x'],
+        ['Y Position', 'y'],
+        ['Moving', 'moving'],
+        ['Target', 'target'],
+        ['Party', 'party'],
+        ['Dead', 'rip'],
+        // Add other attributes as needed
+    ];
+}
+
+const getPlayerAttribute = {
+    init: function() {
+        this.appendValueInput('PLAYER')
+            .setCheck('Entity')
+            .appendField('Get Player')
+            .appendField(new Blockly.FieldDropdown(getPlayerAttributeOptions), 'ATTRIBUTE')
+            .appendField('of');
+        this.setOutput(true, null); // Output type depends on attribute
+        this.setTooltip('Gets an attribute of the specified player');
+        this.setColour(300);
+    }
+};
+
+javascript.javascriptGenerator.forBlock['getPlayerAttribute'] = function(block) {
+    const player = Blockly.JavaScript.valueToCode(block, 'PLAYER', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const attribute = block.getFieldValue('ATTRIBUTE');
+    const code = `(${player} && ${player}.${attribute})`;
+    return [code, Blockly.JavaScript.ORDER_MEMBER];
+};
+
+
+// SetTarget Block
+const setTarget = {
+    init: function() {
+        this.appendValueInput('TARGET')
+            .setCheck('Entity')
+            .appendField('Set Target to');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Sets the current target to the specified entity');
+        this.setColour(180);
+    }
+};
+javascript.javascriptGenerator.forBlock['setTarget'] = function(block) {
+    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
+    const code = `change_target(${target});\n`;
+    return code;
+};
+
+
+// current Target Block
+const currentTarget = {
+    init: function() {
+        this.appendDummyInput()
+            .appendField('Current Target');
+        this.setOutput(true, 'Entity');
+        this.setTooltip('Returns the currently targeted entity');
+        this.setHelpUrl('');
+        this.setColour(290);
+    }
+};
+
+javascript.javascriptGenerator.forBlock['currentTarget'] = function(block) {
+    const code = `get_target()`;
+    return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
+};
+
+const setChatLog = {
+    init: function() {
+        this.appendDummyInput('INPUT_NAME')
+            .appendField(new Blockly.FieldLabelSerializable('Set Chat Log'), 'LABEL');
+        this.appendValueInput('MESSAGE')
+            .setCheck('String')
+            .appendField('Message');
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setTooltip('Sets a message in the game console chat');
+        this.setHelpUrl('');
+        this.setColour(60);
+    }
+};
+
+
+javascript.javascriptGenerator.forBlock['setChatLog'] = function(block) {
+    const label = block.getFieldValue('LABEL');
+    const message = Blockly.JavaScript.valueToCode(block, 'MESSAGE', Blockly.JavaScript.ORDER_NONE) || `'No Monsters'`;
+  
+    // Assemble JavaScript code
+    const code = `log(${message});\n`;
+    return code;
+}
+
+
+
+
 Blockly.common.defineBlocks({
     moveto: moveto,
     attack: attack,
@@ -973,7 +1105,6 @@ Blockly.common.defineBlocks({
     loot: loot,
     getTargetedMonster: getTargetedMonster,
     getNearestMonsterWithOptions: getNearestMonsterWithOptions,
-    changeTarget: changeTarget,
     setMessage: setMessage,
     isInRange: isInRange,
     isMoving: isMoving,
@@ -986,8 +1117,8 @@ Blockly.common.defineBlocks({
     moveDown: moveDown,
     moveLeft: moveLeft,
     moveRight: moveRight,
-    getPlayerX: getPlayerX,
-    getPlayerY: getPlayerY,
+    getCharacterX: getCharacterX,
+    getCharacterY: getCharacterY,
     getMonsterX: getMonsterX,
     getMonsterY: getMonsterY,
     isMonsterNear: isMonsterNear,
@@ -1009,6 +1140,14 @@ Blockly.common.defineBlocks({
     getMonsterHP: getMonsterHP,
     setIntervalBlock: setIntervalBlock,
     commentBlock: commentBlock, // Newly added Comment Block
+    getMonsterAttribute: getMonsterAttribute,
+    getPlayerAttribute: getPlayerAttribute,
+    setTarget: setTarget,
+    currentTarget: currentTarget,
+    setChatLog: setChatLog,
+
+
+
 
 
 
@@ -1041,10 +1180,12 @@ javascript.javascriptGenerator.forBlock['isCharacterMoving'] = function(block) {
 };
 
 javascript.javascriptGenerator.forBlock['getPlayerByName'] = function(block) {
-    const playerName = Blockly.JavaScript.valueToCode(block, 'PLAYER_NAME', Blockly.JavaScript.ORDER_NONE) || '""';
-    const code = `get_player(${playerName})`;
+    const playerName = block.getFieldValue('PLAYER_NAME');
+    const code = `get_player('${playerName}')`;
     return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
 };
+
+
 javascript.javascriptGenerator.forBlock['useSkillByName'] = function(block) {
     const skillName = block.getFieldValue('SKILL_NAME');
     const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'null';
@@ -1123,13 +1264,13 @@ javascript.javascriptGenerator.forBlock['canAttack'] = function(block) {
 
 
 
-javascript.javascriptGenerator.forBlock['getPlayerX'] = function(block) {
+javascript.javascriptGenerator.forBlock['getCharacterX'] = function(block) {
     const code = 'character.real_x';
     return [code, Blockly.JavaScript.ORDER_ATOMIC];
 };
 
 
-javascript.javascriptGenerator.forBlock['getPlayerY'] = function(block) {
+javascript.javascriptGenerator.forBlock['getCharacterY'] = function(block) {
     const code = 'character.real_y';
     return [code, Blockly.JavaScript.ORDER_ATOMIC];
 };
@@ -1304,12 +1445,6 @@ javascript.javascriptGenerator.forBlock['getNearestMonsterWithOptions'] = functi
     const code = `get_nearest_monster({min_xp:${minXp},max_att:${maxAtt}})`;
     return [code, Blockly.JavaScript.ORDER_FUNCTION_CALL];
 }
-
-javascript.javascriptGenerator.forBlock['changeTarget'] = function(block) {
-    const target = Blockly.JavaScript.valueToCode(block, 'TARGET', Blockly.JavaScript.ORDER_NONE) || 'get_nearest_monster()';
-    const code = `change_target(${target});\n`;
-    return code;
-};
 
 
 javascript.javascriptGenerator.forBlock['setMessage'] = function(block) {

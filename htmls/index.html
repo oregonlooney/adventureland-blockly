@@ -197,14 +197,11 @@
 						<block type="moveToLocation"></block> <!-- New Block -->
 						 <block type="moveToEntity"></block> <!-- New Block -->
 						 <block type="followPlayer"></block> <!-- New Block -->
-
-
-
-
 					</category>
 					<category name="Actions" colour="#1E90FF">
 						<block type="canAttack"></block> <!-- New Block -->
 						<block type="attack"></block>
+						<block type="setTarget"></block>
 						<block type="useSkillByName"></block> <!-- New Block -->
 						<block type="useSkill"></block>
 						<block type="stopAction"></block>
@@ -212,45 +209,48 @@
 						<block type="loot"></block>
 						<block type="castSpell"></block>
 						<block type="dodgeAttack"></block>
-						<block type="getPlayerX"></block>
-						<block type="getPlayerY"></block>
-						<block type="getMonsterX"></block>
-						<block type="getMonsterY"></block>
+
 					</category>
 					<category name="Utilities" colour="#32CD32">
 						<block type="logMessage"></block>
 						<block type="setMessage"></block>
 						<block type="wait"></block>
 						<block type="commentBlock"></block>
+						<block type="setChatLog"></block>
 						
 
 					</category>
 					<category name="Inputs" colour="#9400D3">
-						<block type="getPlayerHPFromEntity"></block>
-						<block type="getPlayerMPFromEntity"></block>
-						<block type="getPlayerByName"></block> <!-- New Block -->
-						<block type="getMonsterHP"></block> <!-- New Block -->
-						<block type="isCharacterMoving"></block> <!-- New Block -->
-					
-						<block type="playerName"></block> <!-- New Block -->
-						<block type="getNearestMonster"></block>
-						<block type="getNearestMonsterOfType"></block> <!-- New Block -->
-						<block type="getNearestPlayer"></block>
-						<block type="getCharacterHP"></block>
-						<block type="getCharacterMP"></block>
-						<block type="getCharacterLevel"></block>
-						<block type="getTargetedMonster"></block>
-						<block type="getNearestMonsterWithOptions"></block>
-						<block type="changeTarget"></block>
-						<block type="isInRange"></block>
-						<block type="isMoving"></block>
-						<block type="checkBuffStatus"></block>
-						<block type="isMonsterNear"></block>
-						<block type="isCharacterDead"></block> <!-- New Block -->
-						<block type="getMonsterXP"></block> <!-- New Block -->
-						<block type="getMonsterGold"></block> <!-- New Block -->
-						<block type="isMonsterXpGoldBelow"></block> <!-- New Block -->
-					
+						<category name="Character Inputs" colour="#9A5CAA">
+							<block type="getCharacterHP"></block>
+							<block type="getCharacterMP"></block>
+							<block type="getCharacterX"></block> <!-- New Block -->
+							<block type="getCharacterY"></block> <!-- New Block -->
+							<block type="getCharacterLevel"></block>
+							<block type="isCharacterMoving"></block> <!-- New Block -->
+							<block type="isCharacterDead"></block> <!-- New Block -->	
+
+						</category>
+						<category name="Other Player Inputs" colour="#FF69B4">
+							<block type="getPlayerAttribute"></block>
+							<block type="getPlayerByName"></block> <!-- New Block -->
+							<block type="getNearestPlayer"></block>
+						</category>
+						<category name="Monster Inputs" colour="#8B0000">
+							<block type="getMonsterAttribute"></block> 
+							<block type="isMonsterNear"></block>
+							<block type="getNearestMonsterWithOptions"></block>
+							<block type="getTargetedMonster"></block>
+							<block type="getNearestMonster"></block>
+							<block type="getNearestMonsterOfType"></block> <!-- New Block -->
+							<block type="isMonsterXpGoldBelow"></block> <!-- New Block -->
+						</category>
+						<category name="Other Inputs" colour="#8B0000">
+							<block type="currentTarget"></block>
+							<block type="isInRange"></block>
+							<block type="isMoving"></block>
+							<block type="checkBuffStatus"></block>
+						</category>
 					</category>
 					<category name="Variables" custom="VARIABLE" colour="#A55AA5"></category>
 					<category name="Logic" colour="#5C68A6">
