@@ -42,6 +42,15 @@
 		<script src="/js/common_functions.js?v={{domain.v}}"></script>
 		<script src="/js/old_common_functions.js?v={{domain.v}}"></script>
 		<script src="/js/functions.js?v={{domain.v}}"></script>
+		{% if not domain.no_html %}
+			<!-- Blockly Edition: vendored Blockly (https://developers.google.com/blockly) + Adventure Land blocks -->
+			<script src="/js/blockly/13.3.0/blockly_compressed.js"></script>
+			<script src="/js/blockly/13.3.0/blocks_compressed.js"></script>
+			<script src="/js/blockly/13.3.0/javascript_compressed.js"></script>
+			<script src="/js/blockly/13.3.0/msg/en.js"></script>
+			<script src="/js/blockly/custom_blocks.js?v={{domain.v}}"></script>
+			<link href="/css/blockly.css?v={{domain.v}}" rel="stylesheet" type="text/css"/>
+		{% endif %}
 		<script src="/js/generated_zones.js?v={{domain.v}}"></script>
 		<link href="/css/cave.css?v={{domain.v}}" rel="stylesheet" type="text/css"/>
 		<script src="/js/entity_animations.js?v={{domain.v}}"></script>
@@ -179,6 +188,7 @@
 				<div id="topleftcornerui" style='display: inline-block; vertical-align: top' class="bpclicks"></div>
 				<div id="topleftcornerdialog" style='display: inline-block; margin-left: 5px; vertical-align: top'></div>
 			</div>
+			{% include "htmls/contents/blockly.html" %}
 			<div id="codeui" class="codeui">
 				<button type="button" class="gamebutton ui-close ui-close-word ui-code-close mclosebutton" onpointerdown="stpr(event)" onclick="btc(event); toggle_code()" aria-label="{{ phrase("pages.index.label-close-code") }}">{{ phrase("pages.index.close") }}</button>
 				<textarea id="code"></textarea>
@@ -210,6 +220,7 @@
 						<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); visualize();">V</div>
 					{% endif %}
 					<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('snippet'); show_snippet()">X</div>
+					<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); toggle_block()">BLOCKLY</div>
 					<div class="gamebutton promode {% if domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('code'); toggle_code()">CODE</div>
 					<div class="gamebutton" onclick="btc(event); tut('com'); render_com()">{{phrase('navigation.communicator_short')}}<span class='comcount' style='color: #9083BC'>{% if user_data and user_data.info.mail%} [{{user_data.info.mail}}]{% endif%}</span></div>
 					<div class="gamebutton newcomermode {% if not domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); toggle_character()">{{ phrase("pages.index.char") }}</div>
@@ -218,6 +229,7 @@
 					<div class="gamebutton" onclick="btc(event); tut('skills'); render_skills()">{{ phrase("pages.index.skills") }}</div>
 					<div class="gamebutton" onclick="btc(event); tut('guide'); show_game_guide();">{{ phrase("pages.index.guide") }}</div> {# newcomermode {% if not domain.newcomer_ui%}hidden{% endif%} #}
 					{# <div class="gamebutton promode {% if domain.newcomer_ui %}hidden{% endif%}" onclick="btc(event); ping()">PING</div> #}
+					<div class="gamebutton newcomermode {% if not domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); toggle_block()">BLOCKLY</div>
 					<div class="gamebutton newcomermode {% if not domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); tut('code'); toggle_code()">CODE</div>
 					<div class="gamebutton" onclick="btc(event); tut('travel'); render_travel();">{{ phrase("pages.index.travel") }}</div>
 					<div class="gamebutton townb newcomermode {% if not domain.newcomer_ui%}hidden{% endif%}" onclick="btc(event); socket.emit('town'); push_deferred('town'); hide_transports();">{{ phrase("pages.index.town-2") }}</div>

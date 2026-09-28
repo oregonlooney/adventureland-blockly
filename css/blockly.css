@@ -1,0 +1,86 @@
+/* Adventure Land Blockly Edition: block coding panel (htmls/contents/blockly.html) */
+#blockui {
+	position: fixed;
+	top: 0px;
+	bottom: 37px;
+	left: 0px;
+	width: 800px;
+	min-width: 300px;
+	max-width: 95vw;
+	display: none;
+	flex-direction: column;
+	box-sizing: border-box;
+	background: black;
+	border: 5px solid gray;
+	padding: 10px 14px 10px 10px;
+	z-index: 402;
+	box-shadow: 0 0 6px #555960;
+}
+#blockui.open {
+	display: flex;
+}
+#blocklyDiv {
+	flex: 1 1 auto;
+	min-height: 150px;
+	width: 100%;
+}
+#blockui .resize-handle-horizontal {
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 5px;
+	height: 100%;
+	background: #555;
+	cursor: ew-resize;
+}
+#blockui .resize-handle-vertical {
+	flex: 0 0 auto;
+	height: 5px;
+	margin-top: 6px;
+	background: #555;
+	cursor: ns-resize;
+}
+#blockui .blockly-code-label {
+	color: #9c9c9c;
+	font-family: var(--pixel-font, pixel);
+	font-size: 20px;
+	margin: 4px 0 2px 0;
+}
+#generatedBlockCode {
+	flex: 0 0 auto;
+	width: 100%;
+	height: 110px;
+	box-sizing: border-box;
+	background: #2d2d2e;
+	border: 4px solid gray;
+	color: white;
+	font-family: monospace;
+	font-size: 14px;
+	padding: 5px 8px;
+	resize: none;
+}
+#blockui .blockly-buttons {
+	flex: 0 0 auto;
+	margin-top: 8px;
+}
+#blockui .blockly-buttons button {
+	background: #4c3634;
+	padding: 8px 18px;
+	font-size: 18px;
+	font-weight: bold;
+	border: none;
+	color: white;
+	cursor: pointer;
+}
+#blockui .blockly-buttons button.blockly-run {
+	background: #2f6b33;
+}
+#blockui .blockly-buttons button:hover {
+	background: #6a6a6a;
+}
+/* Blockly draws its dropdowns and text editors outside #blockui, keep them above the game UI */
+.blocklyWidgetDiv,
+.blocklyDropDownDiv,
+.blocklyTooltipDiv {
+	z-index: 100000 !important;
+}
