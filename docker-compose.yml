@@ -8,6 +8,11 @@
 
 name: adventureland
 
+# web, game and seed all run the same locally built image
+x-app-build: &app-build
+  context: .
+  dockerfile: deploy/Dockerfile
+
 x-logging: &logging
   driver: json-file
   options:
@@ -41,10 +46,9 @@ services:
 
   # Loads the map data into a fresh database, then exits (does nothing on later starts)
   seed:
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile
+    build: *app-build
     image: adventureland-blockly
+    pull_policy: build
     network_mode: host
     env_file: .env
     command: ["node", "deploy/scripts/classroom.js", "seed"]
@@ -55,7 +59,9 @@ services:
 
   # Website, accounts and API (http://PUBLIC_HOST, port WEB_PORT)
   web:
+    build: *app-build
     image: adventureland-blockly
+    pull_policy: build
     network_mode: host
     env_file: .env
     command: ["node", "main.js"]
@@ -67,7 +73,9 @@ services:
 
   # The game world (port GAME_PORT). Marking itself offline first lets it restart right away after a crash.
   game:
+    build: *app-build
     image: adventureland-blockly
+    pull_policy: build
     network_mode: host
     env_file: .env
     working_dir: /app/node
