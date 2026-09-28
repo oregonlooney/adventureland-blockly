@@ -20,6 +20,10 @@ RUN cd node && npm install --omit=dev --no-audit --no-fund
 
 COPY . .
 
+# Browsers cache /js and /css for 30 days and only fetch new copies when the ?v= version number in
+# the page changes. Give every build its own number, or students keep running the old scripts.
+RUN sed -i "s/^Version = [0-9]*;/Version = $(date +%s);/" version.js && head -1 version.js
+
 # Upstream keeps its config in a separate "secretsandconfig" repository; the classroom
 # versions in deploy/config read everything from environment variables (the .env file).
 RUN mkdir -p secretsandconfig && cp deploy/config/keys.js deploy/config/options.js secretsandconfig/
