@@ -1409,6 +1409,9 @@ async function add_event(element, type, tags, args) {
 function server_url(server, api_method) {
 	var definition = options.servers[server.key];
 	if (!definition || definition.inactive) throw new Error("Server unavailable: " + server.key);
+	// Blockly Edition: talk to a game server on the same machine directly, not through its public address
+	// (behind a Cloudflare Tunnel the public address only carries the players' socket.io traffic)
+	if (definition.internal_address) return "http://" + definition.internal_address + definition.api_path + api_method;
 	var protocol = options.base_url.startsWith("https") ? "https" : "http";
 	return protocol + "://" + server.address + definition.api_path + api_method;
 }

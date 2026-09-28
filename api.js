@@ -131,7 +131,8 @@ async function signup_or_login_api(args, steam_signup) {
 	var ip = await get_ip_info(args.req);
 	var referrer = await get_referrer(args.req, ip);
 
-	if (gf(ip, "limit_signups", 0) >= 3) return { failed: true, reason: "too_many_signups_from_ip_wait" };
+	// Blockly Edition: IP exceptions (a school's shared address) aren't limited to 3 signups
+	if (!ip.exception && gf(ip, "limit_signups", 0) >= 3) return { failed: true, reason: "too_many_signups_from_ip_wait" };
 
 	var R = await tx(
 		async () => {

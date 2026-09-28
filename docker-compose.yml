@@ -87,5 +87,20 @@ services:
     restart: unless-stopped
     logging: *logging
 
+  # Cloudflare Tunnel: publishes the game at PUBLIC_URL without opening any ports (deploy/CLOUDFLARE.md).
+  # Only runs when .env has COMPOSE_PROFILES=tunnel and TUNNEL_TOKEN set.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    network_mode: host
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+      - game
+    restart: unless-stopped
+    logging: *logging
+
 volumes:
   mongo-data:

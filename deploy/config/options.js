@@ -5,6 +5,17 @@
 var public_host = process.env.PUBLIC_HOST || "localhost";
 var web_port = Number(process.env.WEB_PORT || 80);
 var game_port = Number(process.env.GAME_PORT || 7192);
+var base_url = "http://" + public_host + (web_port == 80 ? "" : ":" + web_port);
+// Browsers connect straight to the game server, on its own port
+var game_address = public_host + ":" + game_port;
+
+// Behind a Cloudflare Tunnel (deploy/CLOUDFLARE.md) everything shares one https address:
+// the tunnel sends /socket.io/ to the game server and everything else to the website
+if (process.env.PUBLIC_URL) {
+	var public_url = new URL(process.env.PUBLIC_URL);
+	base_url = public_url.origin;
+	game_address = public_url.host;
+}
 
 machines = {
 	local: {
@@ -24,7 +35,9 @@ servers = {
 		local_ip: "0.0.0.0",
 		local_port: game_port,
 		// Students' browsers connect straight to this address, so it must be reachable from their computers
-		address: public_host + ":" + game_port,
+		address: game_address,
+		// The website reaches the game server here (both run on this machine, see docker-compose.yml)
+		internal_address: "127.0.0.1:" + game_port,
 		machine: "local",
 		db: "dev",
 		secure: false,
@@ -36,7 +49,7 @@ servers = {
 module.exports = {
 	project_name: "adventureland",
 	name: "Adventure Land",
-	base_url: "http://" + public_host + (web_port == 80 ? "" : ":" + web_port),
+	base_url: base_url,
 	// Dev must stay on: web signups (the "Free Signup [Educational Use]" link) only work in Dev mode
 	Dev: true,
 	Local: true,

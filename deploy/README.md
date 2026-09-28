@@ -72,7 +72,7 @@ Email is never sent, so students can sign up with any address that looks like an
 ## Things to know
 
 - **Passwords:** the server runs in upstream's development mode, which is required for web signups. That mode logs signup and login passwords in plain text, and it stores passwords with weak hashing. Have students use a class-only password.
-- **Keep it on the school network.** Don't port-forward it to the internet. Keep `.env` private: it holds the admin keys.
+- **Reaching it from outside your network:** don't port-forward it. Use a Cloudflare Tunnel instead, see [CLOUDFLARE.md](CLOUDFLARE.md). Keep `.env` private: it holds the admin keys.
 - **Characters per IP:** the game allows 3 characters online at once per IP address. This is fine when every student has their own computer. If many students share one IP address, run `classroom.js allow-ip <address>`.
 - **MongoDB won't start** (it exits immediately, or logs mention AVX): set the VM CPU type to `host`. If that isn't possible, uncomment `MONGO_IMAGE=mongo:4.4` in `.env`.
 - **Browsers can't connect to the game** (the page loads, but the game hangs on connecting): check that `PUBLIC_HOST` in `.env` is the address students actually use, and that port 7192 isn't blocked by a firewall. After editing `.env`, run `sudo docker compose up -d`.
@@ -110,5 +110,5 @@ git remote add upstream https://github.com/kaansoral/adventureland_mongodb   # o
 git fetch upstream && git merge upstream/main
 ```
 
-The Blockly files are separate from upstream's files, so merges rarely conflict. The only upstream file this fork edits is `htmls/index.html`, and only by a few lines.
+The Blockly files are separate from upstream's files, so merges rarely conflict. Only three upstream files are edited, each by a few lines marked "Blockly Edition": `htmls/index.html`, `adventure_functions.js` (`server_url`) and `api.js` (the signup limit).
 If upstream changes the shared engine (https://github.com/kaansoral/common_engine), update `COMMON_ENGINE_REF` in `deploy/Dockerfile` to its latest commit.

@@ -9,7 +9,9 @@
 //   remove-admin <email>       Take admin rights away
 //   verify-all                 Mark every account's email as verified (removes the "not verified" debuff)
 //   reset-password <email>     Print a link the student can open to choose a new password
-//   allow-ip <ip> [limit]      Allow more characters online from one IP (default 40), e.g. a shared NAT address
+//   list-ips                   Show the IP addresses players connect from (behind Cloudflare: their public IPs)
+//   allow-ip <ip> [limit]      Lift the per-IP limits for one address (a school's shared IP): unlimited signups
+//                              and [limit] x 3 characters online at once (default 40)
 
 const path = require("node:path");
 const crypto = require("node:crypto");
@@ -123,6 +125,21 @@ const commands = {
 		});
 	},
 
+	async "list-ips"() {
+		await with_db(async (db) => {
+			const ips = await db.collection("ip").find({}).sort({ created: -1 }).limit(50).toArray();
+			for (const ip of ips) {
+				const info = ip.info || {};
+				console.log(
+					ip._id.slice(3).padEnd(40) +
+						((info.users || ip.users || []).length + " account(s)").padEnd(16) +
+						(ip.exception ? "allowed x" + info.limit : "normal limits") +
+						(info.limit_signups ? ", recent signups: " + Math.ceil(info.limit_signups) : ""),
+				);
+			}
+		});
+	},
+
 	async "allow-ip"(ip, limit) {
 		if (!ip) usage("Missing <ip>");
 		const value = Number(limit || 40);
@@ -148,7 +165,7 @@ const commands = {
 				{ upsert: true },
 			),
 		);
-		console.log("Up to " + value + "x the normal character limit is now allowed from " + ip + ".");
+		console.log(ip + " can now sign up any number of accounts and have up to " + value * 3 + " characters online.");
 	},
 };
 
