@@ -20,10 +20,12 @@ In the tunnel's **Public Hostname** tab ("Published application routes" in newer
 
 | # | Subdomain | Domain | Path | Service type | URL |
 |---|---|---|---|---|---|
-| 1 | `adventure` | yourdomain.com | `socket.io` | HTTP | `localhost:7192` |
+| 1 | `adventure` | yourdomain.com | `^/socket\.io/` | HTTP | `localhost:7192` |
 | 2 | `adventure` | yourdomain.com | *(empty)* | HTTP | `localhost:80` |
 
 The first route carries the live game connection. The second one serves the website. Cloudflare checks routes from the top, so the `socket.io` route must be listed first; drag it up if it isn't.
+
+Type the path exactly as shown, including `^` and `\`. Cloudflare treats it as a pattern that can match anywhere in the address, and a plain `socket.io` would also catch the website's `/js/socket.io/.../socket.io.min.js` file. The game page then loads without it and never connects.
 
 ## 3. Turn it on in the VM
 
@@ -85,6 +87,6 @@ docker compose exec web node deploy/scripts/classroom.js list-ips
 
 ## Good to know
 
-- **Cloudflare scripts:** don't turn on Cloudflare features that inject scripts into pages, such as Web Analytics or Rocket Loader. They load files from other Cloudflare domains, which the school Wi-Fi would block.
+- **Cloudflare scripts:** turn off Cloudflare features that inject scripts into pages. **Web Analytics** (Analytics & Logs → Web Analytics) and Rocket Loader load files from other Cloudflare domains, which the school Wi-Fi blocks. Web Analytics can be on by default: a console error about `static.cloudflareinsights.com` means it is.
 - **LAN access:** the LAN setup keeps working. Remove the three lines from `.env` and run `docker compose up -d` to go back to it.
 - **Firewall:** the VM still listens on ports 80 and 7192 on your home network. Nothing needs to be forwarded on your router.
