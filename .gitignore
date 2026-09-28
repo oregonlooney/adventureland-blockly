@@ -49,3 +49,6 @@ __pycache__/
 # System
 .DS_Store
 Thumbs.db
+
+# Classroom deployment secrets (deploy/setup.sh)
+/.env

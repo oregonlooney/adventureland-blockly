@@ -1,0 +1,60 @@
+// Classroom deployment options (copied to secretsandconfig/options.js inside the Docker image).
+// Values come from the .env file that deploy/setup.sh generates.
+
+// The address students type into their browser: a LAN IP (192.168.1.50) or hostname (adventure.lan)
+var public_host = process.env.PUBLIC_HOST || "localhost";
+var web_port = Number(process.env.WEB_PORT || 80);
+var game_port = Number(process.env.GAME_PORT || 7192);
+
+machines = {
+	local: {
+		key: "",
+		ip: "0.0.0.0",
+		user: "",
+	},
+};
+
+servers = {
+	classroom: {
+		region: "US",
+		name: "I",
+		path: "/socket.io/",
+		msgpack_path: "/msgpack/", // required by the game server, even though the browser client doesn't use it
+		api_path: "/server.api/",
+		local_ip: "0.0.0.0",
+		local_port: game_port,
+		// Students' browsers connect straight to this address, so it must be reachable from their computers
+		address: public_host + ":" + game_port,
+		machine: "local",
+		db: "dev",
+		secure: false,
+		nginx: false,
+		Dev: true,
+	},
+};
+
+module.exports = {
+	project_name: "adventureland",
+	name: "Adventure Land",
+	base_url: "http://" + public_host + (web_port == 80 ? "" : ":" + web_port),
+	// Dev must stay on: web signups (the "Free Signup [Educational Use]" link) only work in Dev mode
+	Dev: true,
+	Local: true,
+	Prod: false,
+	Staging: false,
+	Engine: "mongodb",
+	observer_map: "main",
+	merchant_map: "main",
+	port: web_port,
+	close_timeout: 4000,
+	ip_limit: Number(process.env.IP_LIMIT || 3),
+	character_limit: 3,
+	fast_sdk: 0,
+	machines: machines,
+	servers: servers,
+	cookie_key: "auth",
+	// NEVER turn this on for a server students can reach: it makes every visitor an admin,
+	// including POST /api/execute, which runs any JavaScript on the server.
+	// Use deploy/scripts/classroom.js make-admin <email> instead.
+	unsecure_admin: false,
+};

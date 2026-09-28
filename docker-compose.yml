@@ -1,0 +1,83 @@
+# Adventure Land Blockly Edition - classroom server.
+#   1. ./deploy/setup.sh            (once: writes .env with the server address and secret keys)
+#   2. docker compose up -d --build
+# Full guide, including Proxmox: deploy/README.md
+#
+# Everything uses the host's network: students' real IPs reach the game (it limits characters
+# per IP), the web and game servers talk over localhost, and MongoDB only listens on 127.0.0.1.
+
+name: adventureland
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mongo:
+    # MongoDB 5+ needs a CPU with AVX. On Proxmox set the VM's CPU type to "host".
+    # If that isn't possible, set MONGO_IMAGE=mongo:4.4 in .env.
+    image: ${MONGO_IMAGE:-mongo:8.0}
+    network_mode: host
+    # The game uses transactions, which need a replica set (a single-member one is fine)
+    command: ["--replSet", "rs0", "--bind_ip", "127.0.0.1", "--port", "27017"]
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      # Also creates the replica set on the very first start
+      test:
+        - CMD-SHELL
+        - >-
+          S="try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] }) }
+          if (!(db.hello ? db.hello().isWritablePrimary : db.isMaster().ismaster)) quit(1)";
+          if command -v mongosh >/dev/null; then mongosh --quiet --eval "$$S"; else mongo --quiet --eval "$$S"; fi
+      interval: 5s
+      timeout: 20s
+      start_period: 30s
+      retries: 30
+
+  # Loads the map data into a fresh database, then exits (does nothing on later starts)
+  seed:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: adventureland-blockly
+    network_mode: host
+    env_file: .env
+    command: ["node", "deploy/scripts/classroom.js", "seed"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    logging: *logging
+
+  # Website, accounts and API (http://PUBLIC_HOST, port WEB_PORT)
+  web:
+    image: adventureland-blockly
+    network_mode: host
+    env_file: .env
+    command: ["node", "main.js"]
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging: *logging
+
+  # The game world (port GAME_PORT). Marking itself offline first lets it restart right away after a crash.
+  game:
+    image: adventureland-blockly
+    network_mode: host
+    env_file: .env
+    working_dir: /app/node
+    command: ["sh", "-c", "node ../deploy/scripts/classroom.js mark-offline && exec node server.js classroom"]
+    stop_grace_period: 30s
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  mongo-data:

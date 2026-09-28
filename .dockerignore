@@ -1,0 +1,10 @@
+# Keep the Docker build context small (see deploy/Dockerfile)
+.git
+.github
+.env
+**/node_modules
+common
+secretsandconfig
+tauri
+package-lock.json
+node/package-lock.json
