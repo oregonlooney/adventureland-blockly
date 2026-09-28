@@ -8,3 +8,4 @@ secretsandconfig
 tauri
 package-lock.json
 node/package-lock.json
+test

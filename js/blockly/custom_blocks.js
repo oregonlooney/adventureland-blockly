@@ -1,684 +1,194 @@
-// Adventure Land - Blockly Edition
-// Visual (block-based) programming for the in-game CODE runner.
+// Adventure Land - Blockly Edition: the Adventure Land blocks.
 //
-// Loaded by htmls/index.html after the vendored Blockly build in js/blockly/<version>/.
-// The panel markup and toolbox live in htmls/contents/blockly.html, styles in css/blockly.css.
+// Each block is defined once, with its look (build) and the JavaScript it becomes (code), grouped by
+// the toolbox category it appears in (htmls/contents/blockly.html). The generated JavaScript runs in
+// the game's CODE runner, so it can use every function from the runner API
+// (js/runner_functions.js, js/runner_compat.js): move, smart_move, attack, use_skill, ...
 //
-// How it works:
-//  - Students snap blocks together in the BLOCKLY panel.
-//  - Every change regenerates JavaScript into the "generated code" textarea.
-//  - RUN hands that JavaScript to the game's normal code runner (start_runner), exactly like
-//    pressing ENGAGE in the CODE panel, so everything in the runner API is available.
+// Saved workspaces (.xml files and the browser's autosave) store block TYPE names, FIELD names and
+// INPUT names. Never rename those, or students' saved programs stop loading. Retired blocks stay
+// defined (see "Retired blocks" at the end) and are just left out of the toolbox.
 //
-// Compatibility: block type names, field names and input names are part of the saved .xml format.
-// Don't rename them, or students' saved workspaces will stop loading.
-
-var BLOCKLY_VERSION = "13.3.0";
-var BLOCKLY_STORAGE_KEY = "blockly_workspace";
-var blockly_workspace = null;
-
-const defaultBlocksXML = `
-<xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="commentBlock" id="welcome_1" x="20" y="20">
-    <field name="COMMENT_TEXT">Welcome to Adventure Land Blockly Edition</field>
-  </block>
-  <block type="commentBlock" id="welcome_2" x="20" y="50">
-    <field name="COMMENT_TEXT">Use the blocks to automate your character</field>
-  </block>
-  <block type="commentBlock" id="welcome_3" x="20" y="80">
-    <field name="COMMENT_TEXT">Put blocks inside the loop to run them over and over</field>
-  </block>
-  <block type="setIntervalBlock" id="main_loop" x="20" y="130">
-    <field name="INTERVAL">1000</field>
-  </block>
-</xml>
-`;
+// Tests: node --test test/blockly/   (see BLOCKLY.md)
 
 const gen = javascript.javascriptGenerator;
 const Order = javascript.Order;
 
-// ---------------------------------------------------------------------------
-// Panel UI
-// ---------------------------------------------------------------------------
+// One colour (hue) per toolbox category; the toolbox uses the same numbers
+const COLOURS = {
+	loop: 120,
+	movement: 30,
+	combat: 0,
+	me: 260,
+	monsters: 345,
+	players: 300,
+	items: 180,
+	output: 60,
+	party: 200,
+};
 
-function toggle_block() {
-	var blockui = document.getElementById("blockui");
-	if (!blockui) return;
-	blockui.classList.toggle("open");
-	// Blockly measures its container, so resize once the panel is visible
-	if (blockui.classList.contains("open") && blockly_workspace) Blockly.svgResize(blockly_workspace);
-	$(":focus").blur();
-}
-
-function initBlockly() {
-	var blockui = document.getElementById("blockui");
-	if (!blockui || !window.Blockly) return;
-
-	blockly_workspace = Blockly.inject("blocklyDiv", {
-		toolbox: document.getElementById("toolbox"),
-		media: "/js/blockly/" + BLOCKLY_VERSION + "/media/", // served locally so classrooms work offline
-		collapse: true,
-		comments: false,
-		disable: false,
-		maxBlocks: Infinity,
-		trashcan: true,
-		scrollbars: true,
-		oneBasedIndex: true,
-		zoom: {
-			controls: true,
-			wheel: true,
-			startScale: 1.0,
-			maxScale: 3,
-			minScale: 0.3,
-			scaleSpeed: 1.2,
+function defineBlock(type, colour, build, code) {
+	Blockly.Blocks[type] = {
+		init: function () {
+			this.setColour(colour);
+			this.setHelpUrl("");
+			build.call(this);
 		},
-		grid: {
-			spacing: 20,
-			length: 3,
-			colour: "#ccc",
-			snap: true,
-		},
-	});
-
-	blockly_workspace.addChangeListener(function (event) {
-		if (event.isUiEvent) return;
-		document.getElementById("generatedBlockCode").value = gen.workspaceToCode(blockly_workspace);
-		blockly_autosave();
-	});
-
-	var codeOutput = document.getElementById("generatedBlockCode");
-
-	function resizeBlockly() {
-		if (!blockui.classList.contains("open")) return;
-		Blockly.svgResize(blockly_workspace);
-	}
-
-	// Drag the right edge to change the panel width
-	document.getElementById("blocklyResizeHandle").addEventListener("mousedown", function (e) {
-		e.preventDefault();
-		function drag(e) {
-			blockui.style.width = Math.max(300, e.clientX - blockui.offsetLeft) + "px";
-			resizeBlockly();
-		}
-		function stop() {
-			document.removeEventListener("mousemove", drag);
-			document.removeEventListener("mouseup", stop);
-		}
-		document.addEventListener("mousemove", drag);
-		document.addEventListener("mouseup", stop);
-	});
-
-	// Drag the bar between the workspace and the code box to split the height
-	document.getElementById("blocklyCodeResizeHandle").addEventListener("mousedown", function (e) {
-		e.preventDefault();
-		var startY = e.clientY,
-			startHeight = codeOutput.offsetHeight;
-		function drag(e) {
-			codeOutput.style.height = Math.max(40, startHeight - (e.clientY - startY)) + "px";
-			resizeBlockly();
-		}
-		function stop() {
-			document.removeEventListener("mousemove", drag);
-			document.removeEventListener("mouseup", stop);
-		}
-		document.addEventListener("mousemove", drag);
-		document.addEventListener("mouseup", stop);
-	});
-
-	window.addEventListener("resize", resizeBlockly);
-	blockly_restore();
-}
-
-document.addEventListener("DOMContentLoaded", initBlockly);
-
-// ---------------------------------------------------------------------------
-// Running
-// ---------------------------------------------------------------------------
-
-// Runs the generated code in the game's main code runner (the same iframe the CODE panel's
-// ENGAGE button uses), so the game's events, on_destroy, handle_command etc. reach it.
-function runBlocklyCode() {
-	var code = document.getElementById("generatedBlockCode").value;
-	if (code_run) stop_runner();
-	start_runner(0, "// Blockly generated code\n(async () => {\n" + code + "\n})();\n");
-}
-
-function stopBlocklyCode() {
-	if (code_run) stop_runner();
-}
-
-// ---------------------------------------------------------------------------
-// Saving and loading
-// ---------------------------------------------------------------------------
-
-function blockly_workspace_xml() {
-	return Blockly.Xml.domToPrettyText(Blockly.Xml.workspaceToDom(blockly_workspace));
-}
-
-function blockly_load_xml(xmlText) {
-	Blockly.Xml.clearWorkspaceAndLoadFromXml(Blockly.utils.xml.textToDom(xmlText), blockly_workspace);
-}
-
-// Keep the workspace in the browser so a page refresh doesn't lose the student's work
-function blockly_autosave() {
-	try {
-		localStorage.setItem(BLOCKLY_STORAGE_KEY, blockly_workspace_xml());
-	} catch (e) {}
-}
-
-function blockly_restore() {
-	var saved = null;
-	try {
-		saved = localStorage.getItem(BLOCKLY_STORAGE_KEY);
-	} catch (e) {}
-	try {
-		blockly_load_xml(saved || defaultBlocksXML);
-	} catch (e) {
-		console.error("Blockly: couldn't restore the saved workspace, loading the default one", e);
-		blockly_load_xml(defaultBlocksXML);
-	}
-}
-
-function resetBlocks() {
-	if (!blockly_workspace) return;
-	if (!confirm("Clear the workspace and start over? (Use SAVE first if you want to keep it)")) return;
-	blockly_load_xml(defaultBlocksXML);
-}
-
-function saveBlocks() {
-	if (!blockly_workspace) return;
-	var blob = new Blob([blockly_workspace_xml()], { type: "text/xml" });
-	var link = document.createElement("a");
-	link.href = URL.createObjectURL(blob);
-	link.download = "blockly_workspace.xml";
-	link.click();
-}
-
-function loadBlocks(event) {
-	if (!blockly_workspace) return;
-	var file = event.target.files[0];
-	if (!file) return;
-	var reader = new FileReader();
-	reader.onload = function (e) {
-		try {
-			blockly_load_xml(e.target.result);
-		} catch (err) {
-			console.error("Error parsing XML:", err);
-			alert("Failed to load blocks. Please make sure the file is a valid Blockly XML file.");
-		}
 	};
-	reader.readAsText(file);
-	event.target.value = ""; // allow loading the same file again
+	gen.forBlock[type] = code;
+}
+
+// A block that does something (snaps into a stack)
+function action(block, tooltip) {
+	block.setPreviousStatement(true, null);
+	block.setNextStatement(true, null);
+	block.setTooltip(tooltip);
+}
+
+// A block that gives back a value (plugs into another block)
+function value(block, type, tooltip) {
+	block.setOutput(true, type);
+	block.setTooltip(tooltip);
+}
+
+function valueOr(block, name, fallback, order) {
+	return gen.valueToCode(block, name, order === undefined ? Order.NONE : order) || fallback;
+}
+
+function quote(text) {
+	return gen.quote_(text || "");
 }
 
 // ---------------------------------------------------------------------------
-// Dropdown options (read from the game data, G)
+// Dropdowns filled from the game data (G)
 // ---------------------------------------------------------------------------
 
-function blockly_sorted_keys(obj) {
-	var keys = Object.keys(obj || {}).sort();
-	if (!keys.length) return [["(none)", ""]];
-	return keys.map(function (key) {
-		return [key, key];
-	});
+// A dropdown whose list comes from the game data. If a saved program uses a value that isn't in
+// the list (another class's skill, a map removed from the list), the value is kept instead of
+// being silently replaced by the first option.
+class GameDropdown extends Blockly.FieldDropdown {
+	doClassValidation_(newValue) {
+		if (typeof newValue === "string" && newValue) this.savedValue_ = newValue;
+		return super.doClassValidation_(newValue);
+	}
+	getOptions() {
+		const options = super.getOptions(false).slice();
+		const saved = this.savedValue_;
+		if (saved && !options.some((option) => option[1] === saved)) options.push([saved, saved]);
+		return options.length ? options : [["(none)", ""]];
+	}
+}
+
+function gameData() {
+	return window.G || { skills: {}, monsters: {}, maps: {} };
+}
+
+function myClass() {
+	return window.character && character.ctype;
+}
+
+// Skills the player's class can use, plus the abilities everyone has (attack, use_hp, ...)
+function skillOptions(onlyTargeted) {
+	const skills = gameData().skills;
+	const cls = myClass();
+	return Object.keys(skills)
+		.filter((name) => {
+			const skill = skills[name];
+			if (skill.class && cls && !skill.class.includes(cls)) return false;
+			if (skill.type === "ability") return !onlyTargeted && !["stop", "travel"].includes(name);
+			if (skill.type !== "skill" || !skill.class) return false;
+			return !onlyTargeted || skill.target;
+		})
+		.sort((a, b) => (skills[a].name || a).localeCompare(skills[b].name || b))
+		.map((name) => [skills[name].name || name, name]);
 }
 
 function getSkillOptions() {
-	return blockly_sorted_keys(window.G && G.skills);
+	return skillOptions(false);
 }
 
 function getSpellOptions() {
-	return getSkillOptions();
+	return skillOptions(true);
 }
 
+// Monsters that live on normal maps, weakest first
 function getMonsterOptions() {
-	return blockly_sorted_keys(window.G && G.monsters);
+	const data = gameData();
+	const found = {};
+	for (const name in data.maps) {
+		const map = data.maps[name];
+		if (map.ignore || map.instance || map.event || map.irregular) continue;
+		(map.monsters || []).forEach((pack) => {
+			if (data.monsters[pack.type]) found[pack.type] = true;
+		});
+	}
+	return Object.keys(found)
+		.sort((a, b) => data.monsters[a].hp - data.monsters[b].hp)
+		.map((type) => [data.monsters[type].name + " (" + data.monsters[type].hp + " HP)", type]);
 }
 
+// Places smart_move understands: shops first, then the maps players can walk to
 function getLocationOptions() {
-	return blockly_sorted_keys(window.G && G.maps);
-}
-
-function getMonsterAttributeOptions() {
-	return [
-		["HP", "hp"],
-		["Max HP", "max_hp"],
-		["Level", "level"],
-		["XP", "xp"],
-		["Attack", "attack"],
-		["Speed", "speed"],
-		["Range", "range"],
-		["Type", "mtype"],
-		["Target", "target"],
-		["X Position", "real_x"],
-		["Y Position", "real_y"],
-		["Moving", "moving"],
-		["Dead", "dead"],
+	const maps = gameData().maps;
+	const places = [
+		["Town", "town"],
+		["Potion shop", "potions"],
+		["Upgrade / compound", "upgrade"],
+		["Exchange", "exchange"],
+		["Scroll shop", "scrolls"],
 	];
-}
-
-function getPlayerAttributeOptions() {
-	return [
-		["HP", "hp"],
-		["Max HP", "max_hp"],
-		["MP", "mp"],
-		["Max MP", "max_mp"],
-		["Level", "level"],
-		["X Position", "real_x"],
-		["Y Position", "real_y"],
-		["Moving", "moving"],
-		["Target", "target"],
-		["Party", "party"],
-		["Dead", "rip"],
-	];
+	const walkable = Object.keys(maps)
+		.filter((name) => {
+			const map = maps[name];
+			return !map.ignore && !map.instance && !map.event && !map.irregular && !map.unlist && (map.spawns || []).length;
+		})
+		.sort((a, b) => (maps[a].name || a).localeCompare(maps[b].name || b))
+		.map((name) => [maps[name].name || name, name]);
+	return places.concat(walkable);
 }
 
 // ---------------------------------------------------------------------------
-// Block definitions
+// Helpers added to the generated code, only when a block needs them
 // ---------------------------------------------------------------------------
 
-function statementBlock(block, colour, tooltip) {
-	block.setPreviousStatement(true, null);
-	block.setNextStatement(true, null);
-	block.setColour(colour);
-	block.setTooltip(tooltip);
-	block.setHelpUrl("");
+function helper(name, code) {
+	return gen.provideFunction_(name, code.replace("function NAME", "function " + gen.FUNCTION_NAME_PLACEHOLDER_));
 }
 
-function outputBlock(block, type, colour, tooltip) {
-	block.setOutput(true, type);
-	block.setColour(colour);
-	block.setTooltip(tooltip);
-	block.setHelpUrl("");
+function provideBlockError() {
+	return helper(
+		"block_error",
+		`function NAME(error) {
+  game_log("Blockly: " + ((error && (error.reason || error.message)) || error), "#E13758");
+}`,
+	);
 }
 
-Blockly.common.defineBlocks({
-	// --- Loops and utilities ---
-	setIntervalBlock: {
-		init: function () {
-			this.appendDummyInput().appendField("Every").appendField(new Blockly.FieldNumber(1000, 50), "INTERVAL").appendField("ms do");
-			this.appendStatementInput("DO").setCheck(null);
-			this.setColour(120);
-			this.setTooltip("Runs the blocks inside over and over, waiting this many milliseconds between runs (1000 ms = 1 second)");
-			this.setHelpUrl("");
-		},
-	},
-	commentBlock: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Comment"), "LABEL").appendField(new Blockly.FieldTextInput("// Your comment here"), "COMMENT_TEXT");
-			this.setColour(60);
-			this.setTooltip("A note for humans. It doesn't do anything.");
-			this.setHelpUrl("");
-		},
-	},
-	logMessage: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Log Message"), "LABEL");
-			this.appendValueInput("MESSAGE").setCheck(null).appendField("Message");
-			statementBlock(this, 60, "Log a message to the browser's developer console (F12)");
-		},
-	},
-	setMessage: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Set Message"), "LABEL");
-			this.appendValueInput("MESSAGE").setCheck(null).appendField("Message");
-			statementBlock(this, 60, "Show a short message in the small CODE box at the bottom of the screen");
-		},
-	},
-	setChatLog: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Set Chat Log"), "LABEL");
-			this.appendValueInput("MESSAGE").setCheck(null).appendField("Message");
-			statementBlock(this, 60, "Write a message into the game's log");
-		},
-	},
-	wait: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Wait"), "LABEL");
-			this.appendValueInput("DURATION").setCheck("Number").appendField("Duration (ms)");
-			statementBlock(this, 180, "Pause for this many milliseconds (1000 ms = 1 second)");
-		},
-	},
-	declareVariable: {
-		init: function () {
-			this.appendDummyInput().appendField("set").appendField(new Blockly.FieldVariable("var"), "VAR").appendField("to").appendField(new Blockly.FieldTextInput("false"), "VALUE");
-			statementBlock(this, 210, "Declare and initialize a variable.");
-		},
-	},
-
-	// --- Movement ---
-	moveto: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME")
-				.appendField(new Blockly.FieldLabelSerializable("Move to Coordinates"), "LABEL")
-				.appendField(new Blockly.FieldNumber(0), "X_COORD")
-				.appendField(new Blockly.FieldNumber(0), "Y_COORD");
-			this.setInputsInline(true);
-			statementBlock(this, 225, "Move the character to the X, Y coordinates on the current map");
-		},
-	},
-	moveUp: {
-		init: function () {
-			this.appendDummyInput().appendField("Move Up").appendField(new Blockly.FieldNumber(10), "STEPS");
-			statementBlock(this, 180, "Move the character up by this many pixels");
-		},
-	},
-	moveDown: {
-		init: function () {
-			this.appendDummyInput().appendField("Move Down").appendField(new Blockly.FieldNumber(10), "STEPS");
-			statementBlock(this, 180, "Move the character down by this many pixels");
-		},
-	},
-	moveLeft: {
-		init: function () {
-			this.appendDummyInput().appendField("Move Left").appendField(new Blockly.FieldNumber(10), "STEPS");
-			statementBlock(this, 180, "Move the character left by this many pixels");
-		},
-	},
-	moveRight: {
-		init: function () {
-			this.appendDummyInput().appendField("Move Right").appendField(new Blockly.FieldNumber(10), "STEPS");
-			statementBlock(this, 180, "Move the character right by this many pixels");
-		},
-	},
-	moveToLocation: {
-		init: function () {
-			this.appendDummyInput().appendField("Move to Location").appendField(new Blockly.FieldDropdown(getLocationOptions), "LOCATION");
-			statementBlock(this, 225, "Walk (and travel) to the chosen map using smart_move");
-		},
-	},
-	moveToEntity: {
-		init: function () {
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("Move to Target");
-			statementBlock(this, 225, "Move halfway towards the target if it is out of range");
-		},
-	},
-	followPlayer: {
-		init: function () {
-			this.appendDummyInput().appendField("Follow Player").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
-			statementBlock(this, 225, "Walk to another player by name");
-		},
-	},
-	dodgeAttack: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Dodge Attack"), "LABEL");
-			this.appendValueInput("DIRECTION").setCheck("String").appendField("Direction");
-			statementBlock(this, 120, "Step 50 pixels 'left' or 'right' to dodge");
-		},
-	},
-	stopAction: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Stop"), "LABEL");
-			statementBlock(this, 120, "Stop moving (and stop smart_move)");
-		},
-	},
-
-	// --- Actions ---
-	attack: {
-		init: function () {
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("Attack Target");
-			statementBlock(this, 160, "Attack the target if it is in range and the attack is ready");
-		},
-	},
-	setTarget: {
-		init: function () {
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("Set Target to");
-			statementBlock(this, 180, "Set your current target to this monster or player");
-		},
-	},
-	useSkill: {
-		init: function () {
-			this.appendDummyInput().appendField("Use Skill").appendField(new Blockly.FieldDropdown(getSkillOptions), "SKILL_NAME");
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("on Target");
-			statementBlock(this, 230, "Use a skill on the target if it is ready");
-		},
-	},
-	useSkillByName: {
-		init: function () {
-			this.appendDummyInput().appendField("Use Skill by Name").appendField(new Blockly.FieldTextInput("skill_name"), "SKILL_NAME");
-			this.appendValueInput("TARGET").setCheck(["Entity", "Null"]).appendField("on Target");
-			statementBlock(this, 230, "Use a skill (typed by name) on the target");
-		},
-	},
-	castSpell: {
-		init: function () {
-			this.appendDummyInput().appendField("Cast Spell").appendField(new Blockly.FieldDropdown(getSpellOptions), "SPELL_NAME");
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("on Target");
-			statementBlock(this, 260, "Cast a spell (skill) at the target");
-		},
-	},
-	useHpOrMp: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Use HP or MP"), "LABEL");
-			statementBlock(this, 200, "Drink a health or mana potion when you need one");
-		},
-	},
-	useItem: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Use Item"), "LABEL");
-			this.appendValueInput("ITEM_NAME").setCheck("String").appendField("Item Name");
-			statementBlock(this, 200, "Use (or equip) an item from your inventory by its name, for example hpot0");
-		},
-	},
-	loot: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Loot"), "LABEL");
-			statementBlock(this, 120, "Open nearby treasure chests");
-		},
-	},
-
-	// --- Character inputs ---
-	getCharacterHP: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Character HP"), "LABEL");
-			outputBlock(this, "Number", 240, "Your character's current health points");
-		},
-	},
-	getCharacterMP: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Character MP"), "LABEL");
-			outputBlock(this, "Number", 240, "Your character's current mana points");
-		},
-	},
-	getCharacterX: {
-		init: function () {
-			this.appendDummyInput().appendField("Get Player X");
-			outputBlock(this, "Number", 230, "Your character's X coordinate");
-		},
-	},
-	getCharacterY: {
-		init: function () {
-			this.appendDummyInput().appendField("Get Player Y");
-			outputBlock(this, "Number", 230, "Your character's Y coordinate");
-		},
-	},
-	getCharacterLevel: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Character Level"), "LABEL");
-			outputBlock(this, "Number", 210, "Your character's level");
-		},
-	},
-	isCharacterMoving: {
-		init: function () {
-			this.appendDummyInput().appendField("Is Character Moving");
-			outputBlock(this, "Boolean", 210, "True while your character is walking");
-		},
-	},
-	isCharacterDead: {
-		init: function () {
-			this.appendDummyInput().appendField("Is Character Dead");
-			outputBlock(this, "Boolean", 210, "True if your character is dead");
-		},
-	},
-
-	// --- Other player inputs ---
-	getNearestPlayer: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Nearest Player"), "LABEL");
-			outputBlock(this, "Entity", 300, "The nearest other player (or nothing)");
-		},
-	},
-	getPlayerByName: {
-		init: function () {
-			this.appendDummyInput().appendField("Get Player By Name").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
-			outputBlock(this, "Entity", 300, "A nearby player with this name (or nothing)");
-		},
-	},
-	playerName: {
-		init: function () {
-			this.appendDummyInput().appendField("Player Name").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
-			outputBlock(this, "String", 300, "A player's name");
-		},
-	},
-	getPlayerAttribute: {
-		init: function () {
-			this.appendValueInput("PLAYER").setCheck("Entity").appendField("Get Player").appendField(new Blockly.FieldDropdown(getPlayerAttributeOptions), "ATTRIBUTE").appendField("of");
-			outputBlock(this, null, 300, "Read a value (HP, level, ...) from a player");
-		},
-	},
-	getPlayerHPFromEntity: {
-		init: function () {
-			this.appendValueInput("PLAYER_ENTITY").setCheck("Entity").appendField("Get Player HP from");
-			outputBlock(this, "Number", 250, "The HP of the player");
-		},
-	},
-	getPlayerMPFromEntity: {
-		init: function () {
-			this.appendValueInput("PLAYER_ENTITY").setCheck("Entity").appendField("Get Player MP from");
-			outputBlock(this, "Number", 250, "The MP of the player");
-		},
-	},
-
-	// --- Monster inputs ---
-	getNearestMonster: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField("Get Nearest Monster");
-			outputBlock(this, "Entity", 330, "The nearest monster (or nothing)");
-		},
-	},
-	getNearestMonsterOfType: {
-		init: function () {
-			this.appendDummyInput().appendField("Get Nearest Monster of Type").appendField(new Blockly.FieldDropdown(getMonsterOptions), "MONSTER_TYPE");
-			outputBlock(this, "Entity", 330, "The nearest monster of the chosen type (or nothing)");
-		},
-	},
-	getNearestMonsterWithOptions: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Nearest Monster"), "LABEL");
-			this.appendValueInput("MIN_XP").setCheck("Number").appendField("Min XP").setAlign(Blockly.inputs.Align.RIGHT);
-			this.appendValueInput("MAX_ATT").setCheck("Number").appendField("Max ATT").setAlign(Blockly.inputs.Align.RIGHT);
-			outputBlock(this, "Entity", 330, "The nearest monster that gives at least Min XP and has at most Max ATT attack");
-		},
-	},
-	getTargetedMonster: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Get Targeted Monster"), "LABEL");
-			outputBlock(this, "Entity", 290, "The monster you are targeting (or nothing)");
-		},
-	},
-	getMonsterAttribute: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get Monster").appendField(new Blockly.FieldDropdown(getMonsterAttributeOptions), "ATTRIBUTE").appendField("of");
-			outputBlock(this, null, 330, "Read a value (HP, XP, ...) from a monster");
-		},
-	},
-	getMonsterHP: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get Monster HP of");
-			outputBlock(this, "Number", 330, "The monster's current HP");
-		},
-	},
-	getMonsterXP: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get Monster XP");
-			outputBlock(this, "Number", 330, "How much XP the monster gives");
-		},
-	},
-	getMonsterGold: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get Monster Gold");
-			outputBlock(this, "Number", 330, "How much gold this kind of monster drops");
-		},
-	},
-	getMonsterX: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get X of Monster");
-			outputBlock(this, "Number", 330, "The monster's X coordinate");
-		},
-	},
-	getMonsterY: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Get Y of Monster");
-			outputBlock(this, "Number", 330, "The monster's Y coordinate");
-		},
-	},
-	isMonsterNear: {
-		init: function () {
-			this.appendDummyInput().appendField("Is Monster Near (within").appendField(new Blockly.FieldNumber(100), "RANGE").appendField("pixels)");
-			outputBlock(this, "Boolean", 210, "True if any monster is within this many pixels");
-		},
-	},
-	isMonsterXpGoldBelow: {
-		init: function () {
-			this.appendValueInput("MONSTER").setCheck("Entity").appendField("Is Monster");
-			this.appendDummyInput()
-				.appendField(
-					new Blockly.FieldDropdown([
-						["XP", "xp"],
-						["Gold", "gold"],
-					]),
-					"ATTRIBUTE",
-				)
-				.appendField("below");
-			this.appendValueInput("THRESHOLD").setCheck("Number");
-			outputBlock(this, "Boolean", 210, "True if the monster's XP or gold is below the number");
-		},
-	},
-
-	// --- Other inputs ---
-	currentTarget: {
-		init: function () {
-			this.appendDummyInput().appendField("Current Target");
-			outputBlock(this, "Entity", 290, "Whatever you are targeting right now (monster or player)");
-		},
-	},
-	canAttack: {
-		init: function () {
-			this.appendValueInput("TARGET").setCheck("Entity").appendField("Can Attack");
-			outputBlock(this, "Boolean", 210, "True if the target is in range and your attack is ready");
-		},
-	},
-	isInRange: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Is In Range"), "LABEL");
-			this.appendValueInput("TARGET").setCheck(["Entity", "String"]).appendField("Target");
-			outputBlock(this, "Boolean", 210, "True if the target is within your attack range");
-		},
-	},
-	isMoving: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Is Moving"), "LABEL");
-			this.appendValueInput("CHARACTER").setCheck(["Entity", "String"]).appendField("Character");
-			outputBlock(this, "Boolean", 210, "True if that player or monster is moving");
-		},
-	},
-	checkBuffStatus: {
-		init: function () {
-			this.appendDummyInput("INPUT_NAME").appendField(new Blockly.FieldLabelSerializable("Check Buff Status"), "LABEL");
-			this.appendValueInput("BUFF_NAME").setCheck("String").appendField("Buff Name");
-			outputBlock(this, "Boolean", 240, "True if your character has this buff/condition (see G.conditions)");
-		},
-	},
-});
-
-// ---------------------------------------------------------------------------
-// Helpers emitted into the generated code (only when a block needs them)
-// ---------------------------------------------------------------------------
+// Uses a skill, or says in the message box why it can't
+function provideTrySkill() {
+	return helper(
+		"try_skill",
+		`async function NAME(name, target) {
+  var skill = G.skills[name];
+  if (!skill) return set_message("No skill called " + name);
+  if (skill.class && skill.class.indexOf(character.ctype) == -1) return set_message(skill.name + " is not a " + character.ctype + " skill");
+  if (skill.level && character.level < skill.level) return set_message(skill.name + " needs level " + skill.level);
+  if (skill.mp && character.mp < skill.mp) return set_message("Not enough MP for " + skill.name);
+  if (!can_use(name)) return; // still cooling down
+  if (skill.target && !target) return set_message(skill.name + " needs a target");
+  try {
+    await use_skill(name, target);
+  } catch (error) {
+    set_message(skill.name + ": " + ((error && error.reason) || "failed"));
+  }
+}`,
+	);
+}
 
 function provideNearestPlayer() {
-	return gen.provideFunction_(
+	return helper(
 		"get_nearest_player",
-		`function ${gen.FUNCTION_NAME_PLACEHOLDER_}() {
+		`function NAME() {
   var best = null, best_distance = Infinity;
   for (var id in parent.entities) {
     var entity = parent.entities[id];
@@ -693,9 +203,9 @@ function provideNearestPlayer() {
 
 // Accepts an entity, or a player/entity name
 function provideAsEntity() {
-	return gen.provideFunction_(
+	return helper(
 		"as_entity",
-		`function ${gen.FUNCTION_NAME_PLACEHOLDER_}(value) {
+		`function NAME(value) {
   if (typeof value == "string") return get_player(value) || get_entity(value);
   return value;
 }`,
@@ -703,87 +213,90 @@ function provideAsEntity() {
 }
 
 function provideUseItem() {
-	return gen.provideFunction_(
+	return helper(
 		"use_item",
-		`function ${gen.FUNCTION_NAME_PLACEHOLDER_}(name) {
+		`function NAME(name) {
   var slot = locate_item(name);
-  if (slot == -1) return game_log("No " + name + " in the inventory");
+  if (slot == -1) return set_message("No " + name + " in the inventory");
   return equip(slot);
 }`,
 	);
 }
 
-function provideBlockError() {
-	return gen.provideFunction_(
-		"block_error",
-		`function ${gen.FUNCTION_NAME_PLACEHOLDER_}(error) {
-  game_log("Blockly: " + ((error && (error.reason || error.message)) || error), "#E13758");
+function provideDistanceTo() {
+	return helper(
+		"distance_to",
+		`function NAME(target) {
+  if (!target) return 999999;
+  return Math.round(distance(character, target));
 }`,
 	);
 }
 
 // ---------------------------------------------------------------------------
-// JavaScript generators
+// Loops and waiting
 // ---------------------------------------------------------------------------
-
-function valueOr(block, name, fallback, order) {
-	return gen.valueToCode(block, name, order === undefined ? Order.NONE : order) || fallback;
-}
-
-function quote(text) {
-	return gen.quote_(text || "");
-}
-
-// Loops and utilities
 
 // Runs the body, waits, and repeats. A new round never starts before the previous one has
 // finished, so blocks that take a while (smart_move, attack) don't pile up on each other.
-gen.forBlock["setIntervalBlock"] = function (block) {
-	const interval = Math.max(50, Number(block.getFieldValue("INTERVAL")) || 1000);
-	const body = gen.statementToCode(block, "DO");
-	const onError = provideBlockError();
-	return `(async function () {
+defineBlock(
+	"setIntervalBlock",
+	COLOURS.loop,
+	function () {
+		this.appendDummyInput().appendField("Every").appendField(new Blockly.FieldNumber(1000, 50), "INTERVAL").appendField("ms do");
+		this.appendStatementInput("DO").setCheck(null);
+		this.setTooltip("Runs the blocks inside over and over, waiting this many milliseconds between runs (1000 ms = 1 second)");
+	},
+	function (block) {
+		const interval = Math.max(50, Number(block.getFieldValue("INTERVAL")) || 1000);
+		const body = gen.statementToCode(block, "DO");
+		return `(async function () {
   while (true) {
     try {
 ${gen.prefixLines(body, gen.INDENT + gen.INDENT)}    } catch (error) {
-      ${onError}(error);
+      ${provideBlockError()}(error);
     }
     await sleep(${interval});
   }
 })();
 `;
-};
+	},
+);
 
-gen.forBlock["commentBlock"] = function (block) {
-	return "// " + String(block.getFieldValue("COMMENT_TEXT")).replace(/[\r\n]+/g, " ") + "\n";
-};
+defineBlock(
+	"wait",
+	COLOURS.loop,
+	function () {
+		this.appendValueInput("DURATION").setCheck("Number").appendField("Wait (ms)");
+		action(this, "Pause for this many milliseconds (1000 ms = 1 second)");
+	},
+	(block) => `await sleep(${valueOr(block, "DURATION", "1000")});\n`,
+);
 
-gen.forBlock["logMessage"] = function (block) {
-	return `console.log(${valueOr(block, "MESSAGE", "'Hello World'")});\n`;
-};
+defineBlock(
+	"waitUntil",
+	COLOURS.loop,
+	function () {
+		this.appendValueInput("CONDITION").setCheck("Boolean").appendField("Wait until");
+		action(this, "Pause until the condition becomes true, for example: wait until not Is Character Moving");
+	},
+	(block) => `while (!(${valueOr(block, "CONDITION", "true")})) {\n  await sleep(100);\n}\n`,
+);
 
-gen.forBlock["setMessage"] = function (block) {
-	return `set_message(${valueOr(block, "MESSAGE", "''")});\n`;
-};
-
-gen.forBlock["setChatLog"] = function (block) {
-	return `game_log(${valueOr(block, "MESSAGE", "''")});\n`;
-};
-
-gen.forBlock["wait"] = function (block) {
-	return `await sleep(${valueOr(block, "DURATION", "1000")});\n`;
-};
-
-gen.forBlock["declareVariable"] = function (block) {
-	const name = gen.getVariableName(block.getFieldValue("VAR"));
-	return `${name} = ${block.getFieldValue("VALUE") || "false"};\n`;
-};
-
+// ---------------------------------------------------------------------------
 // Movement
+// ---------------------------------------------------------------------------
 
-gen.forBlock["moveto"] = function (block) {
-	return `await move(${Number(block.getFieldValue("X_COORD"))}, ${Number(block.getFieldValue("Y_COORD"))});\n`;
-};
+defineBlock(
+	"moveto",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput("INPUT_NAME").appendField("Move to X").appendField(new Blockly.FieldNumber(0), "X_COORD").appendField("Y").appendField(new Blockly.FieldNumber(0), "Y_COORD");
+		this.setInputsInline(true);
+		action(this, "Walk in a straight line to the X, Y position on this map (walls stop you)");
+	},
+	(block) => `await move(${Number(block.getFieldValue("X_COORD"))}, ${Number(block.getFieldValue("Y_COORD"))});\n`,
+);
 
 function moveBy(dx, dy) {
 	return function (block) {
@@ -793,30 +306,73 @@ function moveBy(dx, dy) {
 		return `await move(${x}, ${y});\n`;
 	};
 }
-gen.forBlock["moveUp"] = moveBy(0, -1);
-gen.forBlock["moveDown"] = moveBy(0, 1);
-gen.forBlock["moveLeft"] = moveBy(-1, 0);
-gen.forBlock["moveRight"] = moveBy(1, 0);
 
-gen.forBlock["moveToLocation"] = function (block) {
-	return `await smart_move(${quote(block.getFieldValue("LOCATION"))});\n`;
-};
+[
+	["moveUp", "Move Up", 0, -1],
+	["moveDown", "Move Down", 0, 1],
+	["moveLeft", "Move Left", -1, 0],
+	["moveRight", "Move Right", 1, 0],
+].forEach(([type, label, dx, dy]) =>
+	defineBlock(
+		type,
+		COLOURS.movement,
+		function () {
+			this.appendDummyInput().appendField(label).appendField(new Blockly.FieldNumber(10), "STEPS").appendField("pixels");
+			action(this, label + " by this many pixels");
+		},
+		moveBy(dx, dy),
+	),
+);
 
-gen.forBlock["moveToEntity"] = function (block) {
-	const target = valueOr(block, "TARGET", "get_targeted_monster()");
-	return `{
+defineBlock(
+	"moveToLocation",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput().appendField("Travel to").appendField(new GameDropdown(getLocationOptions), "LOCATION");
+		action(this, "Find the way to a shop or map and walk there (through doors and teleports). This can take a while.");
+	},
+	(block) => `await smart_move(${quote(block.getFieldValue("LOCATION"))});\n`,
+);
+
+defineBlock(
+	"huntMonster",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput().appendField("Travel to where").appendField(new GameDropdown(getMonsterOptions), "MONSTER_TYPE").appendField("live");
+		action(this, "Find the way to the place these monsters live and walk there. Put it inside an 'if' (for example: if no monster is near), or you will keep walking back and forth.");
+	},
+	(block) => `await smart_move(${quote(block.getFieldValue("MONSTER_TYPE"))});\n`,
+);
+
+defineBlock(
+	"moveToEntity",
+	COLOURS.movement,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Move Toward");
+		action(this, "If the target is out of range, walk halfway toward it");
+	},
+	function (block) {
+		const target = valueOr(block, "TARGET", "get_targeted_monster()");
+		return `{
   let target = ${target};
   if (!target) {
-    set_message("No target to move to");
+    set_message("Nothing to move toward");
   } else if (!is_in_range(target)) {
     await move(character.real_x + (target.real_x - character.real_x) / 2, character.real_y + (target.real_y - character.real_y) / 2);
   }
 }
 `;
-};
+	},
+);
 
-gen.forBlock["followPlayer"] = function (block) {
-	return `{
+defineBlock(
+	"followPlayer",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput().appendField("Follow Player").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
+		action(this, "Walk to where this player is");
+	},
+	(block) => `{
   let player = get_player(${quote(block.getFieldValue("PLAYER_NAME"))});
   if (player) {
     await smart_move(player);
@@ -824,166 +380,706 @@ gen.forBlock["followPlayer"] = function (block) {
     set_message("Player not found");
   }
 }
-`;
-};
+`,
+);
 
-gen.forBlock["dodgeAttack"] = function (block) {
-	const direction = valueOr(block, "DIRECTION", "'left'");
-	return `if (${direction} == "left") move(character.real_x - 50, character.real_y);
+defineBlock(
+	"goToTown",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput().appendField("Teleport to Town");
+		action(this, "Teleport to the town of this map (takes a few seconds, moving cancels it)");
+	},
+	() => "try { await town(); } catch (error) {}\n",
+);
+
+defineBlock(
+	"dodgeAttack",
+	COLOURS.movement,
+	function () {
+		this.appendValueInput("DIRECTION").setCheck("String").appendField("Dodge");
+		action(this, "Step 50 pixels to the 'left' or the 'right'");
+	},
+	function (block) {
+		const direction = valueOr(block, "DIRECTION", "'left'");
+		return `if (${direction} == "left") move(character.real_x - 50, character.real_y);
 else if (${direction} == "right") move(character.real_x + 50, character.real_y);
 `;
-};
+	},
+);
 
-gen.forBlock["stopAction"] = function () {
-	return "stop();\n";
-};
+defineBlock(
+	"stopAction",
+	COLOURS.movement,
+	function () {
+		this.appendDummyInput().appendField("Stop Moving");
+		action(this, "Stop walking (also stops Travel to)");
+	},
+	() => "stop();\n",
+);
 
-// Actions
+// ---------------------------------------------------------------------------
+// Combat
+// ---------------------------------------------------------------------------
 
-gen.forBlock["attack"] = function (block) {
-	const target = valueOr(block, "TARGET", "get_targeted_monster()");
-	return `{
+defineBlock(
+	"setTarget",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Set Target to");
+		action(this, "Choose what to attack: a monster or a player");
+	},
+	(block) => `change_target(${valueOr(block, "TARGET", "null")});\n`,
+);
+
+defineBlock(
+	"attack",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Attack");
+		action(this, "Attack the target if it is in range and your attack is ready. The message box says why when it can't.");
+	},
+	function (block) {
+		const target = valueOr(block, "TARGET", "get_targeted_monster()");
+		return `{
   let target = ${target};
-  if (target && can_attack(target)) {
+  if (!target) {
+    set_message("Nothing to attack");
+  } else if (!is_in_range(target)) {
+    set_message("Too far to attack");
+  } else if (can_attack(target)) {
     set_message("Attacking");
     try { await attack(target); } catch (error) {}
   }
 }
 `;
-};
+	},
+);
 
-gen.forBlock["setTarget"] = function (block) {
-	return `change_target(${valueOr(block, "TARGET", "null")});\n`;
-};
+defineBlock(
+	"useSkill",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Use Skill").appendField(new GameDropdown(getSkillOptions), "SKILL_NAME");
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("on");
+		action(this, "Use one of your class's skills if it is ready. The message box says why when it can't.");
+	},
+	(block) => `await ${provideTrySkill()}(${quote(block.getFieldValue("SKILL_NAME"))}, ${valueOr(block, "TARGET", "get_target()")});\n`,
+);
 
-function useSkillCode(skill, target) {
-	return `if (can_use(${skill})) {
-  try { await use_skill(${skill}, ${target}); } catch (error) {}
-}
-`;
-}
+defineBlock(
+	"castSpell",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Cast Spell").appendField(new GameDropdown(getSpellOptions), "SPELL_NAME");
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("at");
+		action(this, "Cast one of your class's targeted skills at a monster or player. The message box says why when it can't.");
+	},
+	(block) => `await ${provideTrySkill()}(${quote(block.getFieldValue("SPELL_NAME"))}, ${valueOr(block, "TARGET", "get_target()")});\n`,
+);
 
-gen.forBlock["useSkill"] = function (block) {
-	return useSkillCode(quote(block.getFieldValue("SKILL_NAME")), valueOr(block, "TARGET", "get_target()"));
-};
+defineBlock(
+	"heal",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Heal");
+		action(this, "Priests only: heal yourself or another player");
+	},
+	(block) => `await ${provideTrySkill()}("heal", ${valueOr(block, "TARGET", "character")});\n`,
+);
 
-gen.forBlock["useSkillByName"] = function (block) {
-	return useSkillCode(quote(block.getFieldValue("SKILL_NAME")), valueOr(block, "TARGET", "get_target()"));
-};
+defineBlock(
+	"respawn",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Respawn (if dead)");
+		action(this, "Come back to life in town after dying (you have to wait a few seconds after dying)");
+	},
+	() => "if (character.rip) {\n  try { await respawn(); } catch (error) {}\n}\n",
+);
 
-gen.forBlock["castSpell"] = function (block) {
-	return useSkillCode(quote(block.getFieldValue("SPELL_NAME")), valueOr(block, "TARGET", "get_target()"));
-};
+defineBlock(
+	"canAttack",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Can Attack");
+		value(this, "Boolean", "True if the target is in range and your attack is ready");
+	},
+	(block) => [`can_attack(${valueOr(block, "TARGET", "get_targeted_monster()")})`, Order.FUNCTION_CALL],
+);
 
-gen.forBlock["useHpOrMp"] = function () {
-	return "use_hp_or_mp();\n";
-};
+defineBlock(
+	"canUseSkill",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Skill").appendField(new GameDropdown(getSkillOptions), "SKILL_NAME").appendField("is ready");
+		value(this, "Boolean", "True if your class has this skill and it isn't cooling down");
+	},
+	(block) => [`can_use(${quote(block.getFieldValue("SKILL_NAME"))})`, Order.FUNCTION_CALL],
+);
 
-gen.forBlock["useItem"] = function (block) {
-	return `${provideUseItem()}(${valueOr(block, "ITEM_NAME", "'hpot0'")});\n`;
-};
+defineBlock(
+	"isInRange",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("TARGET").setCheck(["Entity", "String"]).appendField("Is In Range");
+		value(this, "Boolean", "True if the target is close enough to attack");
+	},
+	(block) => [`is_in_range(${provideAsEntity()}(${valueOr(block, "TARGET", "get_targeted_monster()")}))`, Order.FUNCTION_CALL],
+);
 
-gen.forBlock["loot"] = function () {
-	return "loot();\n";
-};
+defineBlock(
+	"currentTarget",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Current Target");
+		value(this, "Entity", "Whatever you are targeting right now, a monster or a player (or nothing)");
+	},
+	() => ["get_target()", Order.FUNCTION_CALL],
+);
 
-// Character inputs
+defineBlock(
+	"getTargetedMonster",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Targeted Monster");
+		value(this, "Entity", "The monster you are targeting (nothing if you target a player)");
+	},
+	() => ["get_targeted_monster()", Order.FUNCTION_CALL],
+);
 
-gen.forBlock["getCharacterHP"] = () => ["character.hp", Order.MEMBER];
-gen.forBlock["getCharacterMP"] = () => ["character.mp", Order.MEMBER];
-gen.forBlock["getCharacterX"] = () => ["character.real_x", Order.MEMBER];
-gen.forBlock["getCharacterY"] = () => ["character.real_y", Order.MEMBER];
-gen.forBlock["getCharacterLevel"] = () => ["character.level", Order.MEMBER];
-gen.forBlock["isCharacterMoving"] = () => ["is_moving(character)", Order.FUNCTION_CALL];
-gen.forBlock["isCharacterDead"] = () => ["!!character.rip", Order.LOGICAL_NOT];
+defineBlock(
+	"entityExists",
+	COLOURS.combat,
+	function () {
+		this.appendValueInput("ENTITY").setCheck(null);
+		this.appendDummyInput().appendField("exists");
+		this.setInputsInline(true);
+		value(this, "Boolean", "True if the block found something, for example: Current Target exists");
+	},
+	(block) => [`(${valueOr(block, "ENTITY", "null", Order.EQUALITY)} != null)`, Order.ATOMIC],
+);
 
-// Other player inputs
+// ---------------------------------------------------------------------------
+// My character
+// ---------------------------------------------------------------------------
 
-gen.forBlock["getNearestPlayer"] = function () {
-	return [`${provideNearestPlayer()}()`, Order.FUNCTION_CALL];
-};
+defineBlock(
+	"myStat",
+	COLOURS.me,
+	function () {
+		this.appendDummyInput()
+			.appendField("My")
+			.appendField(
+				new Blockly.FieldDropdown([
+					["HP", "hp"],
+					["HP %", "hp_percent"],
+					["Max HP", "max_hp"],
+					["MP", "mp"],
+					["MP %", "mp_percent"],
+					["Max MP", "max_mp"],
+					["Level", "level"],
+					["XP", "xp"],
+					["XP needed to level up", "max_xp"],
+					["Gold", "gold"],
+					["X position", "real_x"],
+					["Y position", "real_y"],
+					["Attack", "attack"],
+					["Range", "range"],
+					["Speed", "speed"],
+				]),
+				"STAT",
+			);
+		value(this, "Number", "A number about your character");
+	},
+	function (block) {
+		const stat = block.getFieldValue("STAT");
+		if (stat === "hp_percent") return ["Math.round(100 * character.hp / character.max_hp)", Order.FUNCTION_CALL];
+		if (stat === "mp_percent") return ["Math.round(100 * character.mp / character.max_mp)", Order.FUNCTION_CALL];
+		return ["character." + stat, Order.MEMBER];
+	},
+);
 
-gen.forBlock["getPlayerByName"] = function (block) {
-	return [`get_player(${quote(block.getFieldValue("PLAYER_NAME"))})`, Order.FUNCTION_CALL];
-};
+[
+	["getCharacterHP", "Get Character HP", "hp", "Your character's health points"],
+	["getCharacterMP", "Get Character MP", "mp", "Your character's mana points"],
+	["getCharacterLevel", "Get Character Level", "level", "Your character's level"],
+	["getCharacterX", "Get Character X", "real_x", "Your character's X position"],
+	["getCharacterY", "Get Character Y", "real_y", "Your character's Y position"],
+].forEach(([type, label, property, tooltip]) =>
+	defineBlock(
+		type,
+		COLOURS.me,
+		function () {
+			this.appendDummyInput().appendField(label);
+			value(this, "Number", tooltip);
+		},
+		() => ["character." + property, Order.MEMBER],
+	),
+);
 
-gen.forBlock["playerName"] = function (block) {
-	return [quote(block.getFieldValue("PLAYER_NAME")), Order.ATOMIC];
-};
+defineBlock(
+	"isCharacterMoving",
+	COLOURS.me,
+	function () {
+		this.appendDummyInput().appendField("Is Character Moving");
+		value(this, "Boolean", "True while your character is walking");
+	},
+	() => ["is_moving(character)", Order.FUNCTION_CALL],
+);
 
-// Reads entity[property] without crashing when there is no entity
-function entityProperty(inputName, property) {
+defineBlock(
+	"isCharacterDead",
+	COLOURS.me,
+	function () {
+		this.appendDummyInput().appendField("Is Character Dead");
+		value(this, "Boolean", "True if your character is dead (use Respawn)");
+	},
+	() => ["!!character.rip", Order.LOGICAL_NOT],
+);
+
+defineBlock(
+	"checkBuffStatus",
+	COLOURS.me,
+	function () {
+		this.appendValueInput("BUFF_NAME").setCheck("String").appendField("Has Buff");
+		value(this, "Boolean", "True if your character has this buff or condition right now, for example mluck or poisoned");
+	},
+	(block) => [`!!(character.s && character.s[${valueOr(block, "BUFF_NAME", "'mluck'")}])`, Order.LOGICAL_NOT],
+);
+
+// ---------------------------------------------------------------------------
+// Monsters
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"getNearestMonster",
+	COLOURS.monsters,
+	function () {
+		this.appendDummyInput().appendField("Nearest Monster");
+		value(this, "Entity", "The closest monster (or nothing)");
+	},
+	() => ["get_nearest_monster()", Order.FUNCTION_CALL],
+);
+
+defineBlock(
+	"getNearestMonsterOfType",
+	COLOURS.monsters,
+	function () {
+		this.appendDummyInput().appendField("Nearest").appendField(new GameDropdown(getMonsterOptions), "MONSTER_TYPE");
+		value(this, "Entity", "The closest monster of this kind (or nothing if none are near)");
+	},
+	(block) => [`get_nearest_monster({ type: ${quote(block.getFieldValue("MONSTER_TYPE"))} })`, Order.FUNCTION_CALL],
+);
+
+defineBlock(
+	"getNearestMonsterWithOptions",
+	COLOURS.monsters,
+	function () {
+		this.appendDummyInput().appendField("Nearest Monster");
+		this.appendValueInput("MIN_XP").setCheck("Number").appendField("giving at least XP").setAlign(Blockly.inputs.Align.RIGHT);
+		this.appendValueInput("MAX_ATT").setCheck("Number").appendField("with attack at most").setAlign(Blockly.inputs.Align.RIGHT);
+		value(this, "Entity", "The closest monster worth at least this much XP that isn't too strong. Goos give 100 XP and have 5 attack.");
+	},
+	(block) => [`get_nearest_monster({ min_xp: ${valueOr(block, "MIN_XP", "100")}, max_att: ${valueOr(block, "MAX_ATT", "120")} })`, Order.FUNCTION_CALL],
+);
+
+// Reads a property of a monster or player, without crashing when there is none
+function entityAttribute(inputName, attributes) {
 	return function (block) {
-		const entity = valueOr(block, inputName, "null", Order.MEMBER);
-		return [`(${entity} || {}).${property || block.getFieldValue("ATTRIBUTE")}`, Order.MEMBER];
+		const entity = valueOr(block, inputName, "null", Order.LOGICAL_OR);
+		const attribute = block.getFieldValue("ATTRIBUTE");
+		const special = attributes[attribute];
+		if (special) return [special(`(${entity} || {})`), Order.ATOMIC];
+		return [`(${entity} || {}).${attribute}`, Order.MEMBER];
 	};
 }
 
-gen.forBlock["getPlayerAttribute"] = entityProperty("PLAYER");
-gen.forBlock["getPlayerHPFromEntity"] = entityProperty("PLAYER_ENTITY", "hp");
-gen.forBlock["getPlayerMPFromEntity"] = entityProperty("PLAYER_ENTITY", "mp");
+defineBlock(
+	"getMonsterAttribute",
+	COLOURS.monsters,
+	function () {
+		this.appendValueInput("MONSTER")
+			.setCheck("Entity")
+			.appendField("Monster")
+			.appendField(
+				new Blockly.FieldDropdown([
+					["HP", "hp"],
+					["Max HP", "max_hp"],
+					["Level", "level"],
+					["XP", "xp"],
+					["Gold", "gold"],
+					["Attack", "attack"],
+					["Speed", "speed"],
+					["Range", "range"],
+					["Type", "mtype"],
+					["Target (player name)", "target"],
+					["X Position", "real_x"],
+					["Y Position", "real_y"],
+					["Moving", "moving"],
+					["Dead", "dead"],
+				]),
+				"ATTRIBUTE",
+			)
+			.appendField("of");
+		value(this, null, "A value about a monster (nothing if there is no monster)");
+	},
+	entityAttribute("MONSTER", {
+		gold: (m) => `((G.monsters[${m}.mtype] || {}).gold || 0)`,
+		moving: (m) => `!!${m}.moving`,
+		dead: (m) => `!!${m}.dead`,
+	}),
+);
 
-// Monster inputs
+defineBlock(
+	"isMonsterNear",
+	COLOURS.monsters,
+	function () {
+		this.appendDummyInput().appendField("Is a Monster within").appendField(new Blockly.FieldNumber(100, 0), "RANGE").appendField("pixels");
+		value(this, "Boolean", "True if any monster is at least this close");
+	},
+	(block) => [
+		`Object.values(parent.entities).some((entity) => entity.type == "monster" && !entity.dead && distance(character, entity) <= ${Number(block.getFieldValue("RANGE")) || 100})`,
+		Order.FUNCTION_CALL,
+	],
+);
 
-gen.forBlock["getNearestMonster"] = () => ["get_nearest_monster()", Order.FUNCTION_CALL];
+defineBlock(
+	"isMonsterXpGoldBelow",
+	COLOURS.monsters,
+	function () {
+		this.appendValueInput("MONSTER").setCheck("Entity").appendField("Monster");
+		this.appendDummyInput()
+			.appendField(
+				new Blockly.FieldDropdown([
+					["XP", "xp"],
+					["Gold", "gold"],
+				]),
+				"ATTRIBUTE",
+			)
+			.appendField("is below");
+		this.appendValueInput("THRESHOLD").setCheck("Number");
+		this.setInputsInline(true);
+		value(this, "Boolean", "True if the monster's XP or gold is below the number");
+	},
+	function (block) {
+		const monster = valueOr(block, "MONSTER", "null", Order.LOGICAL_OR);
+		const threshold = valueOr(block, "THRESHOLD", "0", Order.RELATIONAL);
+		const amount = block.getFieldValue("ATTRIBUTE") === "xp" ? `(${monster} || {}).xp` : `(G.monsters[(${monster} || {}).mtype] || {}).gold`;
+		return [`(${amount} < ${threshold})`, Order.ATOMIC];
+	},
+);
 
-gen.forBlock["getNearestMonsterOfType"] = function (block) {
-	return [`get_nearest_monster({ type: ${quote(block.getFieldValue("MONSTER_TYPE"))} })`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["getNearestMonsterWithOptions"] = function (block) {
-	const minXp = valueOr(block, "MIN_XP", "100");
-	const maxAtt = valueOr(block, "MAX_ATT", "120");
-	return [`get_nearest_monster({ min_xp: ${minXp}, max_att: ${maxAtt} })`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["getTargetedMonster"] = () => ["get_targeted_monster()", Order.FUNCTION_CALL];
-
-gen.forBlock["getMonsterAttribute"] = entityProperty("MONSTER");
-gen.forBlock["getMonsterHP"] = entityProperty("MONSTER", "hp");
-gen.forBlock["getMonsterXP"] = entityProperty("MONSTER", "xp");
-gen.forBlock["getMonsterX"] = entityProperty("MONSTER", "real_x");
-gen.forBlock["getMonsterY"] = entityProperty("MONSTER", "real_y");
-
-gen.forBlock["getMonsterGold"] = function (block) {
-	const monster = valueOr(block, "MONSTER", "null", Order.MEMBER);
-	return [`((G.monsters[(${monster} || {}).mtype] || {}).gold || 0)`, Order.ATOMIC];
-};
-
-gen.forBlock["isMonsterNear"] = function (block) {
-	const range = Number(block.getFieldValue("RANGE")) || 100;
-	return [`Object.values(parent.entities).some((entity) => entity.type == "monster" && !entity.dead && distance(character, entity) <= ${range})`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["isMonsterXpGoldBelow"] = function (block) {
-	const monster = valueOr(block, "MONSTER", "null", Order.MEMBER);
-	const threshold = valueOr(block, "THRESHOLD", "0", Order.RELATIONAL);
-	const value = block.getFieldValue("ATTRIBUTE") === "xp" ? `(${monster} || {}).xp` : `(G.monsters[(${monster} || {}).mtype] || {}).gold`;
-	return [`(${value} < ${threshold})`, Order.ATOMIC];
-};
-
-// Other inputs
-
-gen.forBlock["currentTarget"] = () => ["get_target()", Order.FUNCTION_CALL];
-
-gen.forBlock["canAttack"] = function (block) {
-	return [`can_attack(${valueOr(block, "TARGET", "get_targeted_monster()")})`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["isInRange"] = function (block) {
-	return [`is_in_range(${provideAsEntity()}(${valueOr(block, "TARGET", "get_targeted_monster()")}))`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["isMoving"] = function (block) {
-	return [`is_moving(${provideAsEntity()}(${valueOr(block, "CHARACTER", "character")}))`, Order.FUNCTION_CALL];
-};
-
-gen.forBlock["checkBuffStatus"] = function (block) {
-	return [`!!(character.s && character.s[${valueOr(block, "BUFF_NAME", "'speed'")}])`, Order.LOGICAL_NOT];
-};
+defineBlock(
+	"distanceTo",
+	COLOURS.monsters,
+	function () {
+		this.appendValueInput("TARGET").setCheck("Entity").appendField("Distance to");
+		value(this, "Number", "How many pixels away a monster or player is (a huge number if there is none)");
+	},
+	(block) => [`${provideDistanceTo()}(${valueOr(block, "TARGET", "null")})`, Order.FUNCTION_CALL],
+);
 
 // ---------------------------------------------------------------------------
-// Tweaks to Blockly's built-in blocks so they fit the game
+// Players
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"getNearestPlayer",
+	COLOURS.players,
+	function () {
+		this.appendDummyInput().appendField("Nearest Player");
+		value(this, "Entity", "The closest other player (or nothing)");
+	},
+	() => [`${provideNearestPlayer()}()`, Order.FUNCTION_CALL],
+);
+
+defineBlock(
+	"getPlayerByName",
+	COLOURS.players,
+	function () {
+		this.appendDummyInput().appendField("Player named").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
+		value(this, "Entity", "A player on your screen with this name (or nothing)");
+	},
+	(block) => [`get_player(${quote(block.getFieldValue("PLAYER_NAME"))})`, Order.FUNCTION_CALL],
+);
+
+defineBlock(
+	"playerName",
+	COLOURS.players,
+	function () {
+		this.appendDummyInput().appendField("Name").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
+		value(this, "String", "A player's name, as text");
+	},
+	(block) => [quote(block.getFieldValue("PLAYER_NAME")), Order.ATOMIC],
+);
+
+defineBlock(
+	"getPlayerAttribute",
+	COLOURS.players,
+	function () {
+		this.appendValueInput("PLAYER")
+			.setCheck("Entity")
+			.appendField("Player")
+			.appendField(
+				new Blockly.FieldDropdown([
+					["HP", "hp"],
+					["Max HP", "max_hp"],
+					["MP", "mp"],
+					["Max MP", "max_mp"],
+					["Level", "level"],
+					["Name", "name"],
+					["Class", "ctype"],
+					["X Position", "real_x"],
+					["Y Position", "real_y"],
+					["Moving", "moving"],
+					["Target (monster or player)", "target"],
+					["Party leader", "party"],
+					["Dead", "rip"],
+				]),
+				"ATTRIBUTE",
+			)
+			.appendField("of");
+		value(this, null, "A value about a player (nothing if there is no player)");
+	},
+	entityAttribute("PLAYER", {
+		target: (p) => `get_entity(${p}.target)`,
+		party: (p) => `(${p}.party || "")`,
+		moving: (p) => `!!${p}.moving`,
+		rip: (p) => `!!${p}.rip`,
+	}),
+);
+
+defineBlock(
+	"isMoving",
+	COLOURS.players,
+	function () {
+		this.appendValueInput("CHARACTER").setCheck(["Entity", "String"]).appendField("Is Moving");
+		value(this, "Boolean", "True if that player or monster is walking");
+	},
+	(block) => [`is_moving(${provideAsEntity()}(${valueOr(block, "CHARACTER", "character")}))`, Order.FUNCTION_CALL],
+);
+
+// ---------------------------------------------------------------------------
+// Party
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"partyInvite",
+	COLOURS.party,
+	function () {
+		this.appendDummyInput().appendField("Invite").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME").appendField("to my party");
+		action(this, "Ask another player to join your party. Party members share XP.");
+	},
+	(block) => `try { await send_party_invite(${quote(block.getFieldValue("PLAYER_NAME"))}); } catch (error) {}\n`,
+);
+
+defineBlock(
+	"partyAccept",
+	COLOURS.party,
+	function () {
+		this.appendDummyInput().appendField("Accept party invite from").appendField(new Blockly.FieldTextInput("player_name"), "PLAYER_NAME");
+		action(this, "Join this player's party if they invited you");
+	},
+	(block) => `try { await accept_party_invite(${quote(block.getFieldValue("PLAYER_NAME"))}); } catch (error) {}\n`,
+);
+
+// ---------------------------------------------------------------------------
+// Items and shopping
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"useHpOrMp",
+	COLOURS.items,
+	function () {
+		this.appendDummyInput().appendField("Use HP or MP Potion (when needed)");
+		action(this, "Drink a health or mana potion if you are low (or regenerate a little if you have none)");
+	},
+	() => "use_hp_or_mp();\n",
+);
+
+defineBlock(
+	"useItem",
+	COLOURS.items,
+	function () {
+		this.appendValueInput("ITEM_NAME").setCheck("String").appendField("Use Item");
+		action(this, "Use or equip an item from your inventory by its name, for example hpot0 (health potion)");
+	},
+	(block) => `${provideUseItem()}(${valueOr(block, "ITEM_NAME", "'hpot0'")});\n`,
+);
+
+defineBlock(
+	"loot",
+	COLOURS.items,
+	function () {
+		this.appendDummyInput().appendField("Loot Chests");
+		action(this, "Open the treasure chests monsters drop near you");
+	},
+	() => "loot();\n",
+);
+
+defineBlock(
+	"itemCount",
+	COLOURS.items,
+	function () {
+		this.appendValueInput("ITEM_NAME").setCheck("String").appendField("How many");
+		this.appendDummyInput().appendField("I have");
+		this.setInputsInline(true);
+		value(this, "Number", "How many of this item are in your inventory, for example hpot0 (health potion) or mpot0 (mana potion)");
+	},
+	(block) => [`quantity(${valueOr(block, "ITEM_NAME", "'hpot0'")})`, Order.FUNCTION_CALL],
+);
+
+defineBlock(
+	"buyItem",
+	COLOURS.items,
+	function () {
+		this.appendDummyInput().appendField("Buy").appendField(new Blockly.FieldNumber(10, 1), "QUANTITY");
+		this.appendValueInput("ITEM_NAME").setCheck("String");
+		this.setInputsInline(true);
+		action(this, "Buy items from a shop. You must be standing next to the shop: use 'Travel to Potion shop' first.");
+	},
+	(block) => `try {
+  await buy(${valueOr(block, "ITEM_NAME", "'hpot0'")}, ${Number(block.getFieldValue("QUANTITY")) || 1});
+} catch (error) {
+  set_message("Can't buy: " + ((error && error.reason) || "failed"));
+}
+`,
+);
+
+// ---------------------------------------------------------------------------
+// Messages and output
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"setMessage",
+	COLOURS.output,
+	function () {
+		this.appendValueInput("MESSAGE").setCheck(null).appendField("Show Message");
+		action(this, "Show a short message in the small CODE box at the bottom of the screen");
+	},
+	(block) => `set_message(${valueOr(block, "MESSAGE", "''")});\n`,
+);
+
+defineBlock(
+	"setChatLog",
+	COLOURS.output,
+	function () {
+		this.appendValueInput("MESSAGE").setCheck(null).appendField("Write to Game Log");
+		action(this, "Add a line to the game's log (only you can see it)");
+	},
+	(block) => `game_log(${valueOr(block, "MESSAGE", "''")});\n`,
+);
+
+defineBlock(
+	"say",
+	COLOURS.output,
+	function () {
+		this.appendValueInput("MESSAGE").setCheck(null).appendField("Say in Chat");
+		action(this, "Say something in the chat that everyone nearby can see. Please don't spam: don't put this in a fast loop!");
+	},
+	(block) => `say(${valueOr(block, "MESSAGE", "''")});\n`,
+);
+
+defineBlock(
+	"logMessage",
+	COLOURS.output,
+	function () {
+		this.appendValueInput("MESSAGE").setCheck(null).appendField("Log to Browser Console");
+		action(this, "Write to the browser's developer console (press F12 to see it)");
+	},
+	(block) => `console.log(${valueOr(block, "MESSAGE", "'Hello World'")});\n`,
+);
+
+defineBlock(
+	"commentBlock",
+	COLOURS.output,
+	function () {
+		this.appendDummyInput().appendField("Note:").appendField(new Blockly.FieldTextInput("Your comment here"), "COMMENT_TEXT");
+		this.setTooltip("A note for people reading your program. It doesn't do anything.");
+	},
+	(block) => "// " + String(block.getFieldValue("COMMENT_TEXT")).replace(/[\r\n]+/g, " ") + "\n",
+);
+
+// ---------------------------------------------------------------------------
+// Retired blocks: not in the toolbox any more, kept so saved programs still load and run
+// ---------------------------------------------------------------------------
+
+defineBlock(
+	"useSkillByName",
+	COLOURS.combat,
+	function () {
+		this.appendDummyInput().appendField("Use Skill by Name").appendField(new Blockly.FieldTextInput("skill_name"), "SKILL_NAME");
+		this.appendValueInput("TARGET").setCheck(["Entity", "Null"]).appendField("on");
+		action(this, "Use a skill (typed by name) on the target");
+	},
+	(block) => `await ${provideTrySkill()}(${quote(block.getFieldValue("SKILL_NAME"))}, ${valueOr(block, "TARGET", "get_target()")});\n`,
+);
+
+[
+	["getMonsterHP", "Monster HP of", "MONSTER", "hp"],
+	["getMonsterXP", "Monster XP of", "MONSTER", "xp"],
+	["getMonsterX", "Monster X of", "MONSTER", "real_x"],
+	["getMonsterY", "Monster Y of", "MONSTER", "real_y"],
+	["getPlayerHPFromEntity", "Player HP of", "PLAYER_ENTITY", "hp"],
+	["getPlayerMPFromEntity", "Player MP of", "PLAYER_ENTITY", "mp"],
+].forEach(([type, label, input, property]) =>
+	defineBlock(
+		type,
+		COLOURS.monsters,
+		function () {
+			this.appendValueInput(input).setCheck("Entity").appendField(label);
+			value(this, "Number", label.replace(" of", ""));
+		},
+		(block) => [`(${valueOr(block, input, "null", Order.LOGICAL_OR)} || {}).${property}`, Order.MEMBER],
+	),
+);
+
+defineBlock(
+	"getMonsterGold",
+	COLOURS.monsters,
+	function () {
+		this.appendValueInput("MONSTER").setCheck("Entity").appendField("Monster Gold of");
+		value(this, "Number", "How much gold this kind of monster drops");
+	},
+	(block) => [`((G.monsters[(${valueOr(block, "MONSTER", "null", Order.LOGICAL_OR)} || {}).mtype] || {}).gold || 0)`, Order.ATOMIC],
+);
+
+defineBlock(
+	"declareVariable",
+	COLOURS.loop,
+	function () {
+		this.appendDummyInput().appendField("set").appendField(new Blockly.FieldVariable("var"), "VAR").appendField("to").appendField(new Blockly.FieldTextInput("false"), "VALUE");
+		action(this, "Set a variable (use the Variables category instead)");
+	},
+	function (block) {
+		const raw = String(block.getFieldValue("VALUE"));
+		// Numbers, true/false/null stay as they are, anything else becomes text
+		const literal = /^(-?\d+(\.\d+)?|true|false|null)$/.test(raw.trim()) ? raw.trim() : quote(raw);
+		return `${gen.getVariableName(block.getFieldValue("VAR"))} = ${literal};\n`;
+	},
+);
+
+// ---------------------------------------------------------------------------
+// Generated code layout
+// ---------------------------------------------------------------------------
+
+// Put the helper functions (block_error, try_skill, ...) at the bottom of the generated code, so
+// students see their own program first. Function declarations work from anywhere in the code.
+(function () {
+	const finish = gen.finish;
+	gen.finish = function (code) {
+		const helpers = [];
+		for (const name in this.functionNames_) {
+			if (this.definitions_[name]) helpers.push(this.definitions_[name]), delete this.definitions_[name];
+		}
+		const result = finish.call(this, code);
+		return helpers.length ? result + "\n\n// Helpers used by the blocks above\n" + helpers.join("\n\n") + "\n" : result;
+	};
+})();
+
+// ---------------------------------------------------------------------------
+// Blockly's built-in blocks, adjusted to fit the game
 // ---------------------------------------------------------------------------
 
 // Loops must pause, or a loop that never ends would freeze the whole game

@@ -1,85 +1,97 @@
-<!-- Adventure Land Blockly Edition: block coding panel. Logic in js/blockly/custom_blocks.js, styles in css/blockly.css -->
+<!-- Adventure Land Blockly Edition: block coding panel. Blocks: js/blockly/custom_blocks.js, panel: js/blockly/panel.js, examples: js/blockly/examples.js, styles: css/blockly.css -->
 <div id="blockui" class="blockui">
 	<button type="button" class="gamebutton ui-close ui-close-word ui-code-close mclosebutton" onpointerdown="stpr(event)" onclick="btc(event); toggle_block()" aria-label="Close Blockly">{{ phrase("pages.index.close") }}</button>
 	<div id="blocklyResizeHandle" class="resize-handle-horizontal" title="Drag to resize"></div>
 	<div id="blocklyDiv"></div>
 	<xml id="toolbox" style="display: none">
-		<category name="Movement" colour="#FF8C00">
+		<category name="Loops" colour="120">
+			<block type="setIntervalBlock"></block>
+			<block type="wait"><value name="DURATION"><shadow type="math_number"><field name="NUM">1000</field></shadow></value></block>
+			<block type="waitUntil"></block>
+			<sep gap="32"></sep>
+			<block type="controls_repeat_ext"><value name="TIMES"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block>
+			<block type="controls_whileUntil"></block>
+			<block type="controls_for"><field name="VAR">i</field><value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value><value name="TO"><shadow type="math_number"><field name="NUM">10</field></shadow></value><value name="BY"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+			<block type="controls_forEach"></block>
+			<block type="controls_flow_statements"></block>
+		</category>
+		<category name="Movement" colour="30">
 			<block type="moveto"></block>
 			<block type="moveUp"></block>
 			<block type="moveDown"></block>
 			<block type="moveLeft"></block>
 			<block type="moveRight"></block>
+			<sep gap="32"></sep>
 			<block type="moveToLocation"></block>
+			<block type="huntMonster"></block>
 			<block type="moveToEntity"></block>
 			<block type="followPlayer"></block>
-		</category>
-		<category name="Actions" colour="#1E90FF">
-			<block type="canAttack"></block>
-			<block type="attack"></block>
-			<block type="setTarget"></block>
-			<block type="useSkillByName"></block>
-			<block type="useSkill"></block>
+			<block type="goToTown"></block>
 			<block type="stopAction"></block>
-			<block type="useHpOrMp"></block>
-			<block type="useItem">
-				<value name="ITEM_NAME">
-					<shadow type="text"><field name="TEXT">hpot0</field></shadow>
-				</value>
-			</block>
-			<block type="loot"></block>
+			<block type="dodgeAttack"><value name="DIRECTION"><shadow type="text"><field name="TEXT">left</field></shadow></value></block>
+		</category>
+		<category name="Combat" colour="0">
+			<block type="setTarget"></block>
+			<block type="attack"></block>
+			<block type="useSkill"></block>
 			<block type="castSpell"></block>
-			<block type="dodgeAttack">
-				<value name="DIRECTION">
-					<shadow type="text"><field name="TEXT">left</field></shadow>
-				</value>
-			</block>
+			<block type="heal"></block>
+			<block type="respawn"></block>
+			<sep gap="32"></sep>
+			<block type="canAttack"></block>
+			<block type="canUseSkill"></block>
+			<block type="isInRange"></block>
+			<block type="currentTarget"></block>
+			<block type="getTargetedMonster"></block>
+			<block type="entityExists"></block>
 		</category>
-		<category name="Utilities" colour="#32CD32">
-			<block type="logMessage"></block>
-			<block type="setMessage"></block>
-			<block type="wait">
-				<value name="DURATION">
-					<shadow type="math_number"><field name="NUM">1000</field></shadow>
-				</value>
-			</block>
+		<category name="Me" colour="260">
+			<block type="myStat"></block>
+			<block type="getCharacterHP"></block>
+			<block type="getCharacterMP"></block>
+			<block type="getCharacterLevel"></block>
+			<block type="getCharacterX"></block>
+			<block type="getCharacterY"></block>
+			<block type="isCharacterMoving"></block>
+			<block type="isCharacterDead"></block>
+			<block type="checkBuffStatus"><value name="BUFF_NAME"><shadow type="text"><field name="TEXT">mluck</field></shadow></value></block>
+		</category>
+		<category name="Monsters" colour="345">
+			<block type="getNearestMonster"></block>
+			<block type="getNearestMonsterOfType"></block>
+			<block type="getNearestMonsterWithOptions"><value name="MIN_XP"><shadow type="math_number"><field name="NUM">100</field></shadow></value><value name="MAX_ATT"><shadow type="math_number"><field name="NUM">120</field></shadow></value></block>
+			<block type="getMonsterAttribute"></block>
+			<block type="isMonsterNear"></block>
+			<block type="isMonsterXpGoldBelow"><value name="THRESHOLD"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
+			<block type="distanceTo"></block>
+		</category>
+		<category name="Players" colour="300">
+			<block type="getNearestPlayer"></block>
+			<block type="getPlayerByName"></block>
+			<block type="playerName"></block>
+			<block type="getPlayerAttribute"></block>
+			<block type="isMoving"></block>
+		</category>
+		<category name="Party" colour="200">
+			<block type="partyInvite"></block>
+			<block type="partyAccept"></block>
+		</category>
+		<category name="Items" colour="180">
+			<block type="useHpOrMp"></block>
+			<block type="loot"></block>
+			<block type="useItem"><value name="ITEM_NAME"><shadow type="text"><field name="TEXT">hpot0</field></shadow></value></block>
+			<block type="itemCount"><value name="ITEM_NAME"><shadow type="text"><field name="TEXT">hpot0</field></shadow></value></block>
+			<block type="buyItem"><value name="ITEM_NAME"><shadow type="text"><field name="TEXT">hpot0</field></shadow></value></block>
+		</category>
+		<category name="Messages" colour="60">
+			<block type="setMessage"><value name="MESSAGE"><shadow type="text"><field name="TEXT">Hello</field></shadow></value></block>
+			<block type="setChatLog"><value name="MESSAGE"><shadow type="text"><field name="TEXT">Hello</field></shadow></value></block>
+			<block type="say"><value name="MESSAGE"><shadow type="text"><field name="TEXT">Hello</field></shadow></value></block>
+			<block type="logMessage"><value name="MESSAGE"><shadow type="text"><field name="TEXT">Hello</field></shadow></value></block>
 			<block type="commentBlock"></block>
-			<block type="setChatLog"></block>
 		</category>
-		<category name="Inputs" colour="#9400D3">
-			<category name="Character Inputs" colour="#9A5CAA">
-				<block type="getCharacterHP"></block>
-				<block type="getCharacterMP"></block>
-				<block type="getCharacterX"></block>
-				<block type="getCharacterY"></block>
-				<block type="getCharacterLevel"></block>
-				<block type="isCharacterMoving"></block>
-				<block type="isCharacterDead"></block>
-			</category>
-			<category name="Other Player Inputs" colour="#FF69B4">
-				<block type="getPlayerAttribute"></block>
-				<block type="getPlayerByName"></block>
-				<block type="getNearestPlayer"></block>
-				<block type="playerName"></block>
-			</category>
-			<category name="Monster Inputs" colour="#8B0000">
-				<block type="getMonsterAttribute"></block>
-				<block type="isMonsterNear"></block>
-				<block type="getNearestMonsterWithOptions"></block>
-				<block type="getTargetedMonster"></block>
-				<block type="getNearestMonster"></block>
-				<block type="getNearestMonsterOfType"></block>
-				<block type="isMonsterXpGoldBelow"></block>
-			</category>
-			<category name="Other Inputs" colour="#8B0000">
-				<block type="currentTarget"></block>
-				<block type="isInRange"></block>
-				<block type="isMoving"></block>
-				<block type="checkBuffStatus"></block>
-			</category>
-		</category>
-		<category name="Variables" custom="VARIABLE" colour="#A55AA5"></category>
-		<category name="Logic" colour="#5C68A6">
+		<sep></sep>
+		<category name="Logic" colour="210">
 			<block type="controls_if"></block>
 			<block type="logic_compare"></block>
 			<block type="logic_operation"></block>
@@ -87,30 +99,7 @@
 			<block type="logic_boolean"></block>
 			<block type="logic_null"></block>
 		</category>
-		<category name="Loops" colour="#5CA65C">
-			<block type="setIntervalBlock"></block>
-			<block type="controls_repeat_ext">
-				<value name="TIMES">
-					<shadow type="math_number"><field name="NUM">10</field></shadow>
-				</value>
-			</block>
-			<block type="controls_whileUntil"></block>
-			<block type="controls_for">
-				<field name="VAR">i</field>
-				<value name="FROM">
-					<shadow type="math_number"><field name="NUM">1</field></shadow>
-				</value>
-				<value name="TO">
-					<shadow type="math_number"><field name="NUM">10</field></shadow>
-				</value>
-				<value name="BY">
-					<shadow type="math_number"><field name="NUM">1</field></shadow>
-				</value>
-			</block>
-			<block type="controls_forEach"></block>
-			<block type="controls_flow_statements"></block>
-		</category>
-		<category name="Math" colour="#5CA65C">
+		<category name="Math" colour="230">
 			<block type="math_number"><field name="NUM">0</field></block>
 			<block type="math_arithmetic"></block>
 			<block type="math_single"></block>
@@ -121,10 +110,10 @@
 			<block type="math_on_list"></block>
 			<block type="math_modulo"></block>
 			<block type="math_constrain"></block>
-			<block type="math_random_int"></block>
+			<block type="math_random_int"><value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value><value name="TO"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
 			<block type="math_random_float"></block>
 		</category>
-		<category name="Text" colour="#5CAABB">
+		<category name="Text" colour="160">
 			<block type="text"></block>
 			<block type="text_join"></block>
 			<block type="text_append"><field name="VAR">myText</field></block>
@@ -132,16 +121,14 @@
 			<block type="text_isEmpty"></block>
 			<block type="text_indexOf"><field name="END">FIRST</field></block>
 			<block type="text_charAt"><field name="WHERE">FROM_START</field></block>
-			<block type="text_getSubstring">
-				<field name="WHERE1">FROM_START</field>
-				<field name="WHERE2">FROM_START</field>
-			</block>
+			<block type="text_getSubstring"><field name="WHERE1">FROM_START</field><field name="WHERE2">FROM_START</field></block>
 			<block type="text_changeCase"></block>
 			<block type="text_trim"></block>
 			<block type="text_print"></block>
 			<block type="text_prompt_ext"><field name="TYPE">TEXT</field></block>
 		</category>
-		<category name="Functions" custom="PROCEDURE" colour="#9A5CAA"></category>
+		<category name="Variables" custom="VARIABLE" colour="330"></category>
+		<category name="Functions" custom="PROCEDURE" colour="290"></category>
 	</xml>
 	<div id="blocklyCodeResizeHandle" class="resize-handle-vertical" title="Drag to resize"></div>
 	<div class="blockly-code-label">GENERATED CODE</div>
@@ -153,5 +140,8 @@
 		<input type="file" id="blocklyFileInput" accept=".xml" style="display: none" onchange="loadBlocks(event)" />
 		<button type="button" onclick="document.getElementById('blocklyFileInput').click()">LOAD</button>
 		<button type="button" onclick="resetBlocks()">RESET</button>
+		<select id="blocklyExamples" onchange="loadExample(this)" aria-label="Load an example program">
+			<option value="">EXAMPLES...</option>
+		</select>
 	</div>
 </div>

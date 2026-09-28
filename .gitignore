@@ -52,3 +52,4 @@ Thumbs.db
 
 # Classroom deployment secrets (deploy/setup.sh)
 /.env
+/test/blockly/node_modules/

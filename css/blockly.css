@@ -75,6 +75,16 @@
 #blockui .blockly-buttons button.blockly-run {
 	background: #2f6b33;
 }
+#blockui .blockly-buttons select {
+	background: #2d2d2e;
+	color: white;
+	border: none;
+	padding: 8px 10px;
+	font-size: 16px;
+	font-weight: bold;
+	vertical-align: top;
+	cursor: pointer;
+}
 #blockui .blockly-buttons button:hover {
 	background: #6a6a6a;
 }

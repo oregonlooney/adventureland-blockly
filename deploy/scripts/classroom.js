@@ -78,7 +78,11 @@ const commands = {
 
 	async "list-users"() {
 		await with_db(async (db) => {
-			const users = await db.collection("user").find({}, { projection: { email: 1, admin: 1, created: 1, "info.verified": 1 } }).sort({ created: 1 }).toArray();
+			const users = await db
+				.collection("user")
+				.find({}, { projection: { email: 1, admin: 1, created: 1, "info.verified": 1 } })
+				.sort({ created: 1 })
+				.toArray();
 			for (const user of users) {
 				const characters = await db
 					.collection("character")

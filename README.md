@@ -1,3 +1,6 @@
+> **Blockly Edition:** this fork adds a block-based programming panel for students.
+> See [BLOCKLY.md](BLOCKLY.md) for how it works, and [deploy/README.md](deploy/README.md) to run a classroom server.
+
 # Adventure Land - The Code MMORPG (MongoDB Edition)
 
 https://adventure.land

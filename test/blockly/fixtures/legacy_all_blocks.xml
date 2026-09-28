@@ -1,0 +1,141 @@
+<!-- Every block from the original 2024 Blockly fork, saved by that version (js/custom_blocks.js at a3a1466). Used by blocks.test.js to check old saves still load. -->
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <variables>
+    <variable id="Sw,8EW]Y?9)ktZF}cQL{">var</variable>
+  </variables>
+  <block type="attack" id="M)}b(w@#pxf`8YEh00|J" x="0" y="0"></block>
+  <block type="canAttack" id="~mD?KNarn[})wIH}eX!l" x="0" y="60"></block>
+  <block type="castSpell" id="_;MmM}zo5?MEfH@a((;J" x="0" y="120">
+    <field name="SPELL_NAME">supershot</field>
+  </block>
+  <block type="checkBuffStatus" id="/v=9N(CO5??7naFtiz(q" x="0" y="180">
+    <field name="LABEL">Check Buff Status</field>
+  </block>
+  <block type="commentBlock" id="o%)nU#8myjXk!O4~8Nc!" x="0" y="240">
+    <field name="LABEL">Comment</field>
+    <field name="COMMENT_TEXT">old comment</field>
+  </block>
+  <block type="currentTarget" id="b-1m3-r3^J^T_OUF=H]@" x="0" y="300"></block>
+  <block type="declareVariable" id="JBGx]QKdG(`aWm5rfD.K" x="0" y="360">
+    <field name="VAR" id="Sw,8EW]Y?9)ktZF}cQL{">var</field>
+    <field name="VALUE">false</field>
+  </block>
+  <block type="dodgeAttack" id="H[6*s0KB?:WBvBQ?dx9(" x="0" y="420">
+    <field name="LABEL">Dodge Attack</field>
+  </block>
+  <block type="followPlayer" id="#h}q~GD{x/a=ua-qN!lR" x="0" y="480">
+    <field name="PLAYER_NAME">Friend1</field>
+  </block>
+  <block type="getCharacterHP" id="X8;fh]D/)KIu!A%!f]1D" x="0" y="540">
+    <field name="LABEL">Get Character HP</field>
+  </block>
+  <block type="getCharacterLevel" id="JX04M)=*(|RLNC:.A#l8" x="0" y="600">
+    <field name="LABEL">Get Character Level</field>
+  </block>
+  <block type="getCharacterMP" id="`MF/:(lx~V8}.R!s3k`L" x="0" y="660">
+    <field name="LABEL">Get Character MP</field>
+  </block>
+  <block type="getCharacterX" id="_7)zs@WS}q7hga*pl}4l" x="0" y="720"></block>
+  <block type="getCharacterY" id="8Rg4EMz4Jy?}XX]PQ7XA" x="0" y="780"></block>
+  <block type="getMonsterAttribute" id="s,Wb7tNU#oP.]IGN_Mo4" x="0" y="840">
+    <field name="ATTRIBUTE">dead</field>
+  </block>
+  <block type="getMonsterGold" id="dn`iL-C0d]/xKc2,j1%z" x="0" y="900"></block>
+  <block type="getMonsterHP" id="k8]-bR14e)#`Vs@K@:Q=" x="0" y="960"></block>
+  <block type="getMonsterX" id="oP@X7^H5jM_5-W]8fvGp" x="0" y="1020"></block>
+  <block type="getMonsterXP" id="{I}V*X:lIlJ*dReHjaa/" x="0" y="1080"></block>
+  <block type="getMonsterY" id="QGxRpR|2:3g}C*5%=$-!" x="0" y="1140"></block>
+  <block type="getNearestMonster" id="`*/$;)cdToi,v6!3T{u4" x="0" y="1200"></block>
+  <block type="getNearestMonsterOfType" id="|0uot)]R$46U3So[Ya)+" x="0" y="1260">
+    <field name="MONSTER_TYPE">bee</field>
+  </block>
+  <block type="getNearestMonsterWithOptions" id="Nr9r;s,lWS)Kue07_4_," x="0" y="1320">
+    <field name="LABEL">Get Nearest Monster</field>
+  </block>
+  <block type="getNearestPlayer" id="w?(E{}$}u=Rpd{km4;@+" x="0" y="1380">
+    <field name="LABEL">Get Nearest Player</field>
+  </block>
+  <block type="getPlayerAttribute" id="{2AVnvtGj^c6XsN6b56G" x="0" y="1440">
+    <field name="ATTRIBUTE">target</field>
+  </block>
+  <block type="getPlayerByName" id="FWiv=4?s:Dkpcl{/4s^_" x="0" y="1500">
+    <field name="PLAYER_NAME">Friend1</field>
+  </block>
+  <block type="getPlayerHPFromEntity" id="HB{xI6-q8N*-K-NPJ_/s" x="0" y="1560"></block>
+  <block type="getPlayerMPFromEntity" id="/^%w).?CGp%qNrHt3YfJ" x="0" y="1620"></block>
+  <block type="getTargetedMonster" id="+Kzb3tW#i17h/3+[=T{G" x="0" y="1680">
+    <field name="LABEL">Get Targeted Monster</field>
+  </block>
+  <block type="isCharacterDead" id="rrL4J(~2?;OUU{hXPjc}" x="0" y="1740"></block>
+  <block type="isCharacterMoving" id="enL`idVMhpHp)}#KdCgD" x="0" y="1800"></block>
+  <block type="isInRange" id="!L22GIKN5{.`zGh90n9c" x="0" y="1860">
+    <field name="LABEL">Is In Range</field>
+  </block>
+  <block type="isMonsterNear" id="N}S_)8eKQ?mC;n$Iok#[" x="0" y="1920">
+    <field name="RANGE">250</field>
+  </block>
+  <block type="isMonsterXpGoldBelow" id="(`K`N`,+0u[+q5ExBCS$" x="0" y="1980">
+    <field name="ATTRIBUTE">gold</field>
+  </block>
+  <block type="isMoving" id="qKb7}d^K}*b+k=`b3W~?" x="0" y="2040">
+    <field name="LABEL">Is Moving</field>
+  </block>
+  <block type="logMessage" id="M~e_?QTESpnDRZLd_P*I" x="0" y="2100">
+    <field name="LABEL">Log Message</field>
+  </block>
+  <block type="loot" id="m_2jykYl/aS0w:_bn_PT" x="0" y="2160">
+    <field name="LABEL">Loot</field>
+  </block>
+  <block type="moveDown" id=".Vdc:BevL~;OR*F%,4lE" x="0" y="2220">
+    <field name="STEPS">42</field>
+  </block>
+  <block type="moveLeft" id="e5-pLt)j,FpL=Va4pa[H" x="0" y="2280">
+    <field name="STEPS">42</field>
+  </block>
+  <block type="moveRight" id="rB#F,Le38r^ln=SRy5e~" x="0" y="2340">
+    <field name="STEPS">42</field>
+  </block>
+  <block type="moveToEntity" id="bAU:C2Gn{?KiEL8_F;hI" x="0" y="2400"></block>
+  <block type="moveToLocation" id="!nB+mn_l1CR3!nyp{k6e" x="0" y="2460">
+    <field name="LOCATION">jail</field>
+  </block>
+  <block type="moveUp" id="%hw81_X-=k8}{iVU}@-#" x="0" y="2520">
+    <field name="STEPS">42</field>
+  </block>
+  <block type="moveto" id="u]bra8k;MWT56@Rw0ZCq" x="0" y="2580">
+    <field name="LABEL">Move to Coordinates</field>
+    <field name="X_COORD">12</field>
+    <field name="Y_COORD">-34</field>
+  </block>
+  <block type="playerName" id="|.hrPPa`yk^E]4bk7y.9" x="0" y="2640">
+    <field name="PLAYER_NAME">Friend1</field>
+  </block>
+  <block type="setChatLog" id="I6=U}d:(fB4:#82KGKD5" x="0" y="2700">
+    <field name="LABEL">Set Chat Log</field>
+  </block>
+  <block type="setIntervalBlock" id="e{11spmvp+A^@I]o}Ttq" x="0" y="2760">
+    <field name="INTERVAL">750</field>
+  </block>
+  <block type="setMessage" id="L)-yd|!:M#6.^{hf6A{]" x="0" y="2820">
+    <field name="LABEL">Set Message</field>
+  </block>
+  <block type="setTarget" id="k|7Lx1$JJp-2vx01W=Xn" x="0" y="2880"></block>
+  <block type="stopAction" id="fn([E*]k0y:l]%-nuD@=" x="0" y="2940">
+    <field name="LABEL">Stop</field>
+  </block>
+  <block type="useHpOrMp" id=";(v?0Y]4C`HD6?b~kFRk" x="0" y="3000">
+    <field name="LABEL">Use HP or MP</field>
+  </block>
+  <block type="useItem" id="GG+#Ce_0C[?bJx7fN6Pc" x="0" y="3060">
+    <field name="LABEL">Use Item</field>
+  </block>
+  <block type="useSkill" id="f+,CP@eMVxr]Z2TQN/@[" x="0" y="3120">
+    <field name="SKILL_NAME">burst</field>
+  </block>
+  <block type="useSkillByName" id="1]fKggAhC:Gxt$n2JjcR" x="0" y="3180">
+    <field name="SKILL_NAME">burst</field>
+  </block>
+  <block type="wait" id="8LeOv@sz;}hd=hUoR-J," x="0" y="3240">
+    <field name="LABEL">Wait</field>
+  </block>
+</xml>

@@ -1,0 +1,13 @@
+{
+	"name": "adventureland-blockly-tests",
+	"private": true,
+	"description": "Tests for the Blockly Edition blocks (see BLOCKLY.md)",
+	"scripts": {
+		"test": "node --test blocks.test.js",
+		"verify-in-game": "node verify_in_game.js"
+	},
+	"devDependencies": {
+		"jsdom": "^26.1.0",
+		"playwright": "^1.55.0"
+	}
+}
