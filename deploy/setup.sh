@@ -36,6 +36,11 @@ GAME_PORT=7192
 #   docker compose exec web node deploy/scripts/classroom.js allow-ip <address>
 IP_LIMIT=3
 
+# Game events to switch off, comma-separated (empty = none). "anniversary" is the event that asks
+# players to find a featured player and send them a kiss. Others: halloween, valentines, holidayseason,
+# lunarnewyear, goobrawl, crabxx, abtesting, icegolem, franky
+DISABLED_EVENTS=anniversary
+
 # Secret keys shared by the web and game servers. Don't share them.
 ACCESS_MASTER=$(secret)
 SERVER_MASTER=$(secret)

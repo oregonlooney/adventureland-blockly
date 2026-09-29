@@ -66,6 +66,12 @@ module.exports = {
 	machines: machines,
 	servers: servers,
 	cookie_key: "auth",
+	// Game events to switch off (DISABLED_EVENTS in .env, comma-separated, empty = none). By default the
+	// anniversary event is off: it asks players to find a featured player and send them a kiss.
+	disabled_events: (process.env.DISABLED_EVENTS === undefined ? "anniversary" : process.env.DISABLED_EVENTS)
+		.split(",")
+		.map((name) => name.trim())
+		.filter(Boolean),
 	// NEVER turn this on for a server students can reach: it makes every visitor an admin,
 	// including POST /api/execute, which runs any JavaScript on the server.
 	// Use deploy/scripts/classroom.js make-admin <email> instead.

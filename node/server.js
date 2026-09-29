@@ -278,6 +278,10 @@ var events = {
 	icegolem: false,
 	franky: false,
 };
+// Blockly Edition: a server can switch events off in its config (options.disabled_events)
+(options.disabled_events || []).forEach(function (name) {
+	if (name in events) events[name] = false;
+});
 var dailies = ["crabxx", "goobrawl", "abtesting"];
 shuffle(dailies);
 var nightlies = ["icegolem", "franky"];
