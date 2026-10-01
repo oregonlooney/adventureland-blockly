@@ -13,7 +13,8 @@ function sint(x) {
 
 function can_create_character_check(user, ip) {
 	if (user.pid) user.info.slots = Math.max(gf(user, "slots", 8), 8);
-	if (ip && gf(ip, "limit_create_character", 0) > 12) return { can: false, reason: "ip" };
+	// Blockly Edition: IP exceptions (and servers with no_ip_limits) aren't limited to 12 new characters
+	if (ip && !ip.exception && gf(ip, "limit_create_character", 0) > 12) return { can: false, reason: "ip" };
 	if (gf(user, "characters", []).length >= 18) return { can: false, reason: "abs" };
 	if (gf(user, "characters", []).length >= gf(user, "slots", 5)) {
 		if (user.cash >= 200) return { can: true, paid: true };
