@@ -77,6 +77,25 @@ Email is never sent, so students can sign up with any address that looks like an
 - **MongoDB won't start** (it exits immediately, or logs mention AVX): set the VM CPU type to `host`. If that isn't possible, uncomment `MONGO_IMAGE=mongo:4.4` in `.env`.
 - **Browsers can't connect to the game** (the page loads, but the game hangs on connecting): check that `PUBLIC_HOST` in `.env` is the address students actually use, and that port 7192 isn't blocked by a firewall. After editing `.env`, run `sudo docker compose up -d`.
 
+## Announcements and a nightly shutdown
+
+To send a message to everyone online (it shows in their chat and game log):
+
+```sh
+sudo docker compose exec web node deploy/scripts/classroom.js announce "The server shuts down at 10:00pm. It's a school night!"
+```
+
+To do this automatically, warn players and then stop the server on school nights (Sunday to Thursday), and start it again on school mornings. First set the VM's clock to your time zone, for example `sudo timedatectl set-timezone America/Los_Angeles`. Then open the root crontab with `sudo crontab -e` and add:
+
+```
+45 21 * * 0-4  cd /opt/adventureland-blockly && docker compose exec -T web node deploy/scripts/classroom.js announce "The server shuts down at 10:00pm (in 15 minutes). It's a school night!"
+55 21 * * 0-4  cd /opt/adventureland-blockly && docker compose exec -T web node deploy/scripts/classroom.js announce "5 minutes until the server shuts down. Good night!"
+0 22 * * 0-4   cd /opt/adventureland-blockly && docker compose stop
+0 7 * * 1-5    cd /opt/adventureland-blockly && docker compose up -d
+```
+
+Each line starts with minute, hour, day of month, month and day of the week (0 = Sunday). Characters are saved when the server stops.
+
 ## Turning game events off
 
 Adventure Land runs seasonal and timed events. The **anniversary** event is off by default: it asks players to find a "featured player" and send them a kiss for a reward. Its KISS and 10 YEARS buttons don't appear while it's off. The "I Kiss You" emote itself stays available.

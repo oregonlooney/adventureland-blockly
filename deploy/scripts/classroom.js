@@ -9,6 +9,7 @@
 //   remove-admin <email>       Take admin rights away
 //   verify-all                 Mark every account's email as verified (removes the "not verified" debuff)
 //   reset-password <email>     Print a link the student can open to choose a new password
+//   announce <message>         Show a message in every online player's chat and game log
 //   list-ips                   Show the IP addresses players connect from (behind Cloudflare: their public IPs)
 //   allow-ip <ip> [limit]      Lift the per-IP limits for one address (a school's shared IP): unlimited signups
 //                              and [limit] x 3 characters online at once (default 40)
@@ -127,6 +128,27 @@ const commands = {
 			console.log("Give this link to the student (it works once):");
 			console.log(options.base_url + "/reset/" + user._id + "/" + key);
 		});
+	},
+
+	async announce(...words) {
+		const message = words.join(" ").trim();
+		if (!message) usage("Missing <message>");
+		for (const key in options.servers) {
+			const server = options.servers[key];
+			const response = await fetch("http://" + server.internal_address + server.api_path + "eval", {
+				method: "POST",
+				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+				body: new URLSearchParams({
+					spass: keys.ACCESS_MASTER,
+					// The message travels as data, not as code
+					code: 'broadcast("server_message", { message: String(data.message), color: "#FFB000", log: true }); output = Object.keys(players).length;',
+					data: JSON.stringify({ message }),
+				}).toString(),
+				signal: AbortSignal.timeout(10000),
+			});
+			if (!response.ok) throw new Error("The game server refused the announcement (" + response.status + "). Is it running?");
+			console.log("Announced to " + JSON.parse(await response.text()) + " player(s) online: " + message);
+		}
 	},
 
 	async "list-ips"() {
