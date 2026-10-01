@@ -71,15 +71,11 @@ Set the action to **Block** and **Deploy**. The second line blocks a maintenance
 
 If the school's IP address changes (the site starts showing a Cloudflare "blocked" page at school), check `/cdn-cgi/trace` again from a computer the rule still allows, then update the rule.
 
-## 5. Let the whole class share one IP
+## 5. Many students, one IP
 
-The game allows only 3 new accounts per day, and 3 characters online at once, per IP address. Students at school all share the school's address, so lift those limits for it:
+Behind Cloudflare, everyone at school arrives from the school's public addresses. Upstream Adventure Land limits each IP address to 3 signups a day and 3 characters online, but this server turns those per-IP limits off by default (`IP_LIMITS`, see [README.md](README.md)), so there's nothing to do. Your firewall rule from step 4 decides who can reach the game at all.
 
-```sh
-docker compose exec web node deploy/scripts/classroom.js allow-ip 203.0.113.10
-```
-
-To check which addresses players are connecting from, run:
+To see which addresses players connect from, run:
 
 ```sh
 docker compose exec web node deploy/scripts/classroom.js list-ips

@@ -211,6 +211,12 @@ async function get_ip_info(ip_a) {
 		};
 	}
 	decay_ip_info(info);
+	// Blockly Edition: options.no_ip_limits treats every address like an IP exception (unlimited signups,
+	// many characters online), for classrooms where many students share one public IP
+	if (options.no_ip_limits) {
+		info.exception = true;
+		info.info.limit = Math.max(info.info.limit || 0, 40);
+	}
 	return info;
 }
 
@@ -1712,7 +1718,8 @@ async function enforce_limitations() {
 			for (var i = 0; i < server.players_list.length; i++) {
 				var player = server.players_list[i];
 				if (player.free) continue;
-				if (player.type === "merchant" && (mips[player.ip] > 1 || mowners[player.owner] > 1) && to_disconnect.indexOf(player.name) === -1) {
+				// Blockly Edition: IP exceptions (ipx > 1) may have more than one merchant per IP, one per account still applies
+				if (player.type === "merchant" && ((mips[player.ip] > 1 && !(ipx[player.ip] > 1)) || mowners[player.owner] > 1) && to_disconnect.indexOf(player.name) === -1) {
 					to_disconnect.push(player.name);
 					continue;
 				}

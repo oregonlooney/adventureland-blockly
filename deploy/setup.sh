@@ -32,9 +32,9 @@ PUBLIC_HOST=$host
 WEB_PORT=80
 # Game server port, browsers connect to it directly
 GAME_PORT=7192
-# Characters online at once from one IP address. To go above 3, also run:
-#   docker compose exec web node deploy/scripts/classroom.js allow-ip <address>
-IP_LIMIT=3
+# Per-IP limits (3 signups a day and 3 characters online per IP address) are off, because a whole
+# school shares addresses. Set IP_LIMITS=on to turn them back on.
+IP_LIMITS=off
 
 # Game events to switch off, comma-separated (empty = none). "anniversary" is the event that asks
 # players to find a featured player and send them a kiss. Others: halloween, valentines, holidayseason,

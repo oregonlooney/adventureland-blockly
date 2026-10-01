@@ -73,7 +73,7 @@ Email is never sent, so students can sign up with any address that looks like an
 
 - **Passwords:** the server runs in upstream's development mode, which is required for web signups. That mode logs signup and login passwords in plain text, and it stores passwords with weak hashing. Have students use a class-only password.
 - **Reaching it from outside your network:** don't port-forward it. Use a Cloudflare Tunnel instead, see [CLOUDFLARE.md](CLOUDFLARE.md). Keep `.env` private: it holds the admin keys.
-- **Characters per IP:** the game allows 3 characters online at once per IP address. This is fine when every student has their own computer. If many students share one IP address, run `classroom.js allow-ip <address>`.
+- **Limits per IP address:** upstream Adventure Land allows only 3 signups a day and 3 characters online per IP address. A whole school shares addresses, so this server turns those limits off. Each account is still limited to 3 characters online at once. To turn the per-IP limits back on, set `IP_LIMITS=on` in `.env` and run `sudo docker compose up -d`. You can then lift them for single addresses with `classroom.js allow-ip <address>`.
 - **MongoDB won't start** (it exits immediately, or logs mention AVX): set the VM CPU type to `host`. If that isn't possible, uncomment `MONGO_IMAGE=mongo:4.4` in `.env`.
 - **Browsers can't connect to the game** (the page loads, but the game hangs on connecting): check that `PUBLIC_HOST` in `.env` is the address students actually use, and that port 7192 isn't blocked by a firewall. After editing `.env`, run `sudo docker compose up -d`.
 

@@ -61,6 +61,9 @@ module.exports = {
 	port: web_port,
 	close_timeout: 4000,
 	ip_limit: Number(process.env.IP_LIMIT || 3),
+	// Classrooms share IP addresses, so the per-IP limits (3 signups a day, 3 characters online) are off
+	// unless IP_LIMITS=on in .env. Each account is still limited to 3 characters online.
+	no_ip_limits: process.env.IP_LIMITS !== "on",
 	character_limit: 3,
 	fast_sdk: 0,
 	machines: machines,
