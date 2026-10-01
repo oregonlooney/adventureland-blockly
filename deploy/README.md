@@ -77,6 +77,26 @@ Email is never sent, so students can sign up with any address that looks like an
 - **MongoDB won't start** (it exits immediately, or logs mention AVX): set the VM CPU type to `host`. If that isn't possible, uncomment `MONGO_IMAGE=mongo:4.4` in `.env`.
 - **Browsers can't connect to the game** (the page loads, but the game hangs on connecting): check that `PUBLIC_HOST` in `.env` is the address students actually use, and that port 7192 isn't blocked by a firewall. After editing `.env`, run `sudo docker compose up -d`.
 
+## Who is online, and from where
+
+To list the characters online right now, with their class, level, IP address and account:
+
+```sh
+sudo docker compose exec web node deploy/scripts/classroom.js who 163.41.
+```
+
+Use the start of your school's public IP addresses where the example has `163.41.`. Anyone connecting from somewhere else, such as a phone on mobile data or a home network, is marked `OUTSIDE`. Leave the prefix off to just list everyone. To keep the list updating every 10 seconds (Ctrl+C to stop):
+
+```sh
+watch -n 10 'sudo docker compose exec -T web node deploy/scripts/classroom.js who 163.41.'
+```
+
+To see every IP address a character's account has ever connected from, even when it's offline:
+
+```sh
+sudo docker compose exec web node deploy/scripts/classroom.js ips-of CharacterName
+```
+
 ## Announcements and a nightly shutdown
 
 To send a message to everyone online (it shows in their chat and game log):

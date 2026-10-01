@@ -9,6 +9,9 @@
 //   remove-admin <email>       Take admin rights away
 //   verify-all                 Mark every account's email as verified (removes the "not verified" debuff)
 //   reset-password <email>     Print a link the student can open to choose a new password
+//   who [ip prefix]            List the characters online now with their IP and account; with an ip prefix
+//                              (like 163.41.) anyone connecting from outside it is flagged
+//   ips-of <character>         Show every IP address the character's account has connected from
 //   announce <message>         Show a message in every online player's chat and game log
 //   list-ips                   Show the IP addresses players connect from (behind Cloudflare: their public IPs)
 //   allow-ip <ip> [limit]      Lift the per-IP limits for one address (a school's shared IP): unlimited signups
@@ -55,6 +58,22 @@ async function find_user(db, email) {
 	}
 	return user;
 }
+
+// Runs code on the game server through its internal admin API (see server_api "/eval" in node/server.js)
+async function game_eval(server, code, data) {
+	const response = await fetch("http://" + server.internal_address + server.api_path + "eval", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: new URLSearchParams({ spass: keys.ACCESS_MASTER, code, data: JSON.stringify(data || {}) }).toString(),
+		signal: AbortSignal.timeout(10000),
+	});
+	if (!response.ok) throw new Error("The game server refused the request (" + response.status + "). Is it running?");
+	return JSON.parse(await response.text());
+}
+
+const WHO_CODE = `output = Object.values(players)
+	.filter((p) => !p.npc && !p.is_npc)
+	.map((p) => ({ name: p.name, type: p.type, level: p.level, owner: p.owner, map: p.map, ip: String(get_ip_server(p) || "").replace("::ffff:", "") }));`;
 
 const commands = {
 	async seed() {
@@ -130,24 +149,50 @@ const commands = {
 		});
 	},
 
+	async who(prefix) {
+		const online = [];
+		for (const key in options.servers) online.push(...(await game_eval(options.servers[key], WHO_CODE)));
+		const emails = await with_db(async (db) => {
+			const users = await db
+				.collection("user")
+				.find({ _id: { $in: online.map((p) => p.owner) } }, { projection: { email: 1 } })
+				.toArray();
+			return Object.fromEntries(users.map((u) => [u._id, (u.email || []).join(" ")]));
+		});
+		online.sort((a, b) => a.ip.localeCompare(b.ip) || a.name.localeCompare(b.name));
+		for (const p of online) {
+			const outside = prefix && !p.ip.startsWith(prefix);
+			console.log((outside ? "OUTSIDE  " : "") + p.name.padEnd(14) + (p.type + " " + p.level).padEnd(14) + p.ip.padEnd(18) + (emails[p.owner] || "") + "  [" + p.map + "]");
+		}
+		console.log(online.length + " online" + (prefix ? ", " + online.filter((p) => !p.ip.startsWith(prefix)).length + " from outside " + prefix : ""));
+	},
+
+	async "ips-of"(name) {
+		if (!name) usage("Missing <character>");
+		await with_db(async (db) => {
+			const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			const character = await db.collection("character").findOne({ name: new RegExp("^" + escaped + "$", "i") });
+			if (!character) return console.error("No character called " + name);
+			const user = await db.collection("user").findOne({ _id: character.owner }, { projection: { email: 1 } });
+			console.log(character.name + " (" + character.type + " " + character.level + "), account " + ((user && user.email) || []).join(" "));
+			const ips = await db
+				.collection("ip")
+				.find({ $or: [{ users: character.owner }, { "info.users": character.owner }, { characters: character._id }, { "info.characters": character._id }] })
+				.toArray();
+			for (const ip of ips) console.log("  " + ip._id.slice(3));
+			if (!ips.length) console.log("  (no IP records)");
+		});
+	},
+
 	async announce(...words) {
 		const message = words.join(" ").trim();
 		if (!message) usage("Missing <message>");
 		for (const key in options.servers) {
-			const server = options.servers[key];
-			const response = await fetch("http://" + server.internal_address + server.api_path + "eval", {
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: new URLSearchParams({
-					spass: keys.ACCESS_MASTER,
-					// The message travels as data, not as code
-					code: 'broadcast("server_message", { message: String(data.message), color: "#FFB000", log: true }); output = Object.keys(players).length;',
-					data: JSON.stringify({ message }),
-				}).toString(),
-				signal: AbortSignal.timeout(10000),
+			// The message travels as data, not as code
+			const count = await game_eval(options.servers[key], 'broadcast("server_message", { message: String(data.message), color: "#FFB000", log: true }); output = Object.keys(players).length;', {
+				message,
 			});
-			if (!response.ok) throw new Error("The game server refused the announcement (" + response.status + "). Is it running?");
-			console.log("Announced to " + JSON.parse(await response.text()) + " player(s) online: " + message);
+			console.log("Announced to " + count + " player(s) online: " + message);
 		}
 	},
 
